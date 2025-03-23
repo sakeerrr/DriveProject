@@ -25,7 +25,7 @@ public class SecurityConfig {
 
     @Bean
     public static PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
@@ -39,23 +39,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/register")) // CSRF is enabled, but ignored for /register
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/register", "/"))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/register", "/home").permitAll()
+                        .requestMatchers("/register", "/").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/home", true)
+                        .defaultSuccessUrl("/dashboard", true)
                         .permitAll()
                 )
                 .logout(logout -> logout
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
                         .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
                         .logoutSuccessUrl("/login?logout")
                         .permitAll()
+                )
+                .sessionManagement(session -> session
+                        .sessionFixation().migrateSession()
+                        .invalidSessionUrl("/login?invalidSession")
+                        .maximumSessions(1)
+                        .expiredUrl("/login?expired")
+
                 );
 
         return http.build();

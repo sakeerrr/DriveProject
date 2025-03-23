@@ -28,11 +28,16 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping("/home")
-    public String home(Model model, Principal principal) {
+    @GetMapping("/")
+    public String home(){
+        return "home";
+    }
+
+    @GetMapping("/dashboard")
+    public String dashboard(Model model, Principal principal) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(principal.getName());
         model.addAttribute("userdetail", userDetails);
-        return "home";
+        return "dashboard";
     }
 
     @GetMapping("/login")

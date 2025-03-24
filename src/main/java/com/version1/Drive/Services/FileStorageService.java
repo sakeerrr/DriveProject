@@ -73,16 +73,16 @@ public class FileStorageService {
         return outputStream.toByteArray();
     }
 
-    @GetMapping("/test-gcs")
-    public ResponseEntity<String> testGcs() {
-        try {
-            Bucket bucket = storage.get(bucketName);
-            return ResponseEntity.ok("Connected to bucket: " + bucket.getName());
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body("Connection failed: " + e.getMessage());
-        }
-    }
+//    @GetMapping("/test-gcs")
+//    public ResponseEntity<String> testGcs() {
+//        try {
+//            Bucket bucket = storage.get(bucketName);
+//            return ResponseEntity.ok("Connected to bucket: " + bucket.getName());
+//        } catch (Exception e) {
+//            return ResponseEntity.status(500)
+//                    .body("Connection failed: " + e.getMessage());
+//        }
+//    }
 
 
 }

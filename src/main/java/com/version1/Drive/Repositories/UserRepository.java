@@ -1,7 +1,7 @@
 package com.version1.Drive.Repositories;
 
 import com.version1.Drive.DTO.UserDTO;
-import com.version1.Drive.Model.UserEntity;
+import com.version1.Drive.Models.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 

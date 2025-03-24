@@ -1,10 +1,10 @@
-package com.version1.Drive.Controller;
+package com.version1.Drive.Controllers;
 
 import java.security.Principal;
 
 import com.version1.Drive.DTO.UserDTO;
-import com.version1.Drive.Model.UserEntity;
-import com.version1.Drive.Service.UserService;
+import com.version1.Drive.Models.UserEntity;
+import com.version1.Drive.Services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -22,7 +22,7 @@ public class UserController {
     @Autowired
     private UserDetailsService userDetailsService;
 
-    private UserService userService;
+    private final UserService userService;
 
     public UserController(UserService userService) {
         this.userService = userService;

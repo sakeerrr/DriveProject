@@ -1,7 +1,7 @@
-package com.version1.Drive.Service;
+package com.version1.Drive.Services;
 
 import com.version1.Drive.DTO.UserDTO;
-import com.version1.Drive.Model.UserEntity;
+import com.version1.Drive.Models.UserEntity;
 import com.version1.Drive.Repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;

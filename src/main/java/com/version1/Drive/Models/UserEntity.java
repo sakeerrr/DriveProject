@@ -1,4 +1,4 @@
-package com.version1.Drive.Model;
+package com.version1.Drive.Models;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

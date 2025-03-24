@@ -8,12 +8,12 @@ import com.google.cloud.storage.StorageOptions;
 import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class FileStorageService {
@@ -61,16 +61,40 @@ public class FileStorageService {
     }
 
     public byte[] downloadFile(String userId, String fileName) throws IOException {
-        String filePath = "users/" + userId + "/" + fileName;
-        Blob blob = storage.get(bucketName, filePath);
+        String filePath = fileName;
+        System.out.println("Fetching file from path: " + filePath);
 
+        Blob blob = storage.get(bucketName, filePath);
         if (blob == null) {
-            throw new RuntimeException("File not found or access denied!");
+            System.err.println("File not found: " + filePath);
+            throw new IOException("File not found");
         }
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         blob.downloadTo(outputStream);
         return outputStream.toByteArray();
+    }
+
+
+    public List<String> listFiles(String userId) {
+        List<String> fileNames = new ArrayList<>();
+        String userPrefix = "users/" + userId + "/";
+
+        try {
+            Bucket bucket = storage.get(bucketName);
+            if (bucket != null) {
+                for (Blob blob : bucket.list().iterateAll()) {
+                    String name = blob.getName();
+                    System.out.println(name);
+                    // Return just the filename portion (after user folder)
+                    fileNames.add(name.substring(userPrefix.length()));
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error listing files: " + e.getMessage());
+        }
+
+        return fileNames;
     }
 
 //    @GetMapping("/test-gcs")

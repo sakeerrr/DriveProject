@@ -1,79 +1,315 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.w3.org/1999/xhtml" xmlns:sec="http://www.w3.org/1999/xhtml">
-
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | CloudDrive</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    :root {
+      --primary-color: #4285F4;  /* Google blue */
+      --primary-hover: #3367D6;  /* Darker blue */
+      --secondary-color: #34A853; /* Google green */
+      --accent-color: #EA4335;   /* Google red */
+      --text-color: #202124;     /* Almost black */
+      --light-text: #5F6368;     /* Gray text */
+      --background: #ffffff;     /* White */
+      --light-gray: #f8f9fa;     /* Light gray background */
+      --shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-     background-color: #f5f5f5;
-     margin: 0;
-     padding: 0;
+      font-family: 'Google Sans', Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      background-color: var(--light-gray);
     }
 
-    .dashboard {
-     background-color: #5e057e;
-     color: #fff;
-     padding: 40px;
-     text-align: center;
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 5%;
+      background-color: var(--background);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      position: fixed;
+      width: 100%;
+      top: 0;
+      z-index: 1000;
     }
 
-    .dashboard_title {
-     font-size: 24px;
-     margin-top: 0;
+    .logo {
+      display: flex;
+      align-items: center;
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--primary-color);
     }
 
-    .dashboard_user {
-     margin-top: 20px;
+    .logo i {
+      margin-right: 10px;
+      color: var(--secondary-color);
     }
 
-    .dashboard_user_name {
-     font-size: 18px;
-     color: #c299d0;
+    .user-nav {
+      display: flex;
+      align-items: center;
     }
 
-    .span-text {
-     text-align: right;
-     color: black;
+    .user-nav .user-info {
+      margin-right: 20px;
+      text-align: right;
     }
 
-    .button-container {
-      margin-top: 20px;
+    .user-nav .user-name {
+      font-weight: 500;
+      color: var(--text-color);
     }
 
-    .button {
-      background-color: #ffffff;
-      color: #5e057e;
-      border: 2px solid #5e057e;
-      padding: 10px 20px;
-      font-size: 16px;
+    .user-nav .user-email {
+      font-size: 0.9rem;
+      color: var(--light-text);
+    }
+
+    .btn-logout {
+      background-color: transparent;
+      color: var(--accent-color);
+      border: 1px solid var(--accent-color);
+      padding: 8px 20px;
+      border-radius: 4px;
+      font-weight: 500;
       cursor: pointer;
-      margin: 5px;
-      border-radius: 5px;
+      transition: var(--transition);
       text-decoration: none;
     }
 
-    .button:hover {
-      background-color: #c299d0;
+    .btn-logout:hover {
+      background-color: var(--accent-color);
       color: white;
+    }
+
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 80px auto 0;
+      padding: 40px 5%;
+    }
+
+    .dashboard-header {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 40px;
+      border-radius: 8px;
+      margin-bottom: 40px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .dashboard-title {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+
+    .welcome-message {
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .user-greeting {
+      font-size: 1.5rem;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 30px;
+    }
+
+    .action-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-top: 40px;
+    }
+
+    .action-card {
+      background-color: var(--background);
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      border-top: 4px solid var(--primary-color);
+    }
+
+    .action-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+
+    .action-icon {
+      font-size: 3rem;
+      color: var(--primary-color);
+      margin-bottom: 20px;
+    }
+
+    .action-title {
+      font-size: 1.4rem;
+      margin-bottom: 15px;
+      color: var(--primary-color);
+    }
+
+    .action-description {
+      color: var(--light-text);
+      margin-bottom: 25px;
+    }
+
+    .action-button {
+      display: inline-block;
+      background-color: var(--primary-color);
+      color: white;
+      padding: 12px 30px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .action-button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .storage-info {
+      background-color: var(--background);
+      border-radius: 8px;
+      padding: 30px;
+      margin-top: 40px;
+      box-shadow: var(--shadow);
+      border-top: 4px solid var(--secondary-color);
+    }
+
+    .storage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .storage-title {
+      font-size: 1.4rem;
+      color: var(--secondary-color);
+    }
+
+    .storage-status {
+      font-weight: 500;
+      color: var(--secondary-color);
+    }
+
+    .progress-bar {
+      height: 10px;
+      background-color: var(--light-gray);
+      border-radius: 5px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+      width: 35%; /* This should be dynamic in a real app */
+    }
+
+    .storage-details {
+      display: flex;
+      justify-content: space-between;
+      color: var(--light-text);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-header {
+        padding: 30px 20px;
+      }
+
+      .dashboard-title {
+        font-size: 2rem;
+      }
+
+      .user-nav .user-info {
+        display: none;
+      }
     }
   </style>
 </head>
-
 <body>
-<div class="dashboard">
-  <h1 class="dashboard_title">Welcome to the Dashboard</h1>
-  <div class="dashboard_user">
-    <h2 th:text="${userdetail.fullname}" class="dashboard_user_name"></h2>
+<nav class="navbar">
+  <div class="logo">
+    <i class="fas fa-cloud"></i>
+    <span>CloudDrive</span>
   </div>
-  <div class="span-text">
-    <span sec:authorize="isAuthenticated" style="color: white;"><a th:href="@{/logout}">Logout</a></span>
+  <div class="user-nav">
+    <div class="user-info" th:if="${userdetail}">
+      <div class="user-name" th:text="${userdetail.fullname ?: 'User'}"></div>
+    </div>
+    <a href="#" class="btn-logout" th:href="@{/logout}">Logout</a>
   </div>
-  <div class="button-container">
-    <a th:href="@{/download}" class="button">Download</a>
-    <a th:href="@{/upload}" class="button">Upload</a>
+</nav>
+
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1 class="dashboard-title">Your CloudDrive Dashboard</h1>
+    <p class="welcome-message">Access and manage all your files in one secure place</p>
+    <div class="user-greeting" th:if="${userdetail}">
+      Welcome back, <span th:text="${userdetail.fullname ?: 'User'}"></span>!
+    </div>
   </div>
+
+  <div class="action-cards">
+    <div class="action-card">
+      <div class="action-icon">
+        <i class="fas fa-upload"></i>
+      </div>
+      <h3 class="action-title">Upload Files</h3>
+      <p class="action-description">Add new files to your cloud storage with just a few clicks</p>
+      <a th:href="@{/upload}" class="action-button">Upload Now</a>
+    </div>
+
+    <div class="action-card">
+      <div class="action-icon">
+        <i class="fas fa-download"></i>
+      </div>
+      <h3 class="action-title">Download Files</h3>
+      <p class="action-description">Access your files from anywhere, on any device</p>
+      <a th:href="@{/download}" class="action-button">View Files</a>
+    </div>
+
+    <div class="action-card">
+      <div class="action-icon">
+        <i class="fas fa-share-alt"></i>
+      </div>
+      <h3 class="action-title">Share Files</h3>
+      <p class="action-description">Collaborate by sharing files with team members</p>
+      <a href="#" class="action-button">Share Now</a>
+    </div>
+  </div>
+
+<!--  <div class="storage-info">-->
+<!--    <div class="storage-header">-->
+<!--      <h3 class="storage-title">Storage Usage</h3>-->
+<!--      <div class="storage-status">35% used</div>-->
+<!--    </div>-->
+<!--    <div class="progress-bar">-->
+<!--      <div class="progress"></div>-->
+<!--    </div>-->
+<!--    <div class="storage-details">-->
+<!--      <span>15.2 GB of 50 GB used</span>-->
+<!--      <span><a href="#" style="color: var(&#45;&#45;primary-color);">Upgrade storage</a></span>-->
+<!--    </div>-->
+<!--  </div>-->
 </div>
 </body>
-
 </html>

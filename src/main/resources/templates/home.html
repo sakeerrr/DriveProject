@@ -3,50 +3,388 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Drive-like Home</title>
+  <title>CloudDrive - Your Secure Cloud Storage</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    :root {
+      --primary-color: #4285F4;
+      --primary-hover: #357AE8;
+      --secondary-color: #34A853;
+      --accent-color: #EA4335;
+      --text-color: #202124;
+      --light-text: #5F6368;
+      --background: #ffffff;
+      --light-gray: #f1f3f4;
+      --shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f1f3f4;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
+      font-family: 'Google Sans', Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      background-color: var(--light-gray);
+      min-height: 100vh;
     }
-    .container {
-        text-align: center;
-        background-color: white;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 5%;
+      background-color: var(--background);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      position: fixed;
+      width: 100%;
+      top: 0;
+      z-index: 1000;
     }
-    h1 {
-        color: #4CAF50;
+
+    .logo {
+      display: flex;
+      align-items: center;
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--primary-color);
     }
+
+    .logo i {
+      margin-right: 10px;
+      color: var(--secondary-color);
+    }
+
+    .nav-links {
+      display: flex;
+      list-style: none;
+    }
+
+    .nav-links li {
+      margin-left: 30px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--light-text);
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .nav-links a:hover {
+      color: var(--primary-color);
+    }
+
+    .nav-links .btn-login {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 4px;
+    }
+
+    .nav-links .btn-login:hover {
+      background-color: var(--primary-hover);
+      color: white;
+    }
+
+    .hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 120px 5% 80px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .hero-content {
+      flex: 1;
+      padding-right: 50px;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      font-weight: 500;
+      color: var(--text-color);
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      color: var(--light-text);
+      margin-bottom: 30px;
+      max-width: 500px;
+    }
+
     .btn {
-        background-color: #4285F4;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        margin: 10px;
-        border-radius: 5px;
-        font-size: 16px;
-        cursor: pointer;
-        text-decoration: none;
+      display: inline-block;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      margin-right: 15px;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: var(--transition);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
     }
+
     .btn:hover {
-        background-color: #357AE8;
+      background-color: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      color: var(--primary-color);
+      border: 1px solid var(--primary-color);
+    }
+
+    .btn-secondary:hover {
+      background-color: rgba(66, 133, 244, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .hero-image {
+      flex: 1;
+      max-width: 600px;
+    }
+
+    .hero-image img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .features {
+      padding: 80px 5%;
+      background-color: var(--background);
+      text-align: center;
+    }
+
+    .features h2 {
+      font-size: 2.2rem;
+      margin-bottom: 60px;
+      font-weight: 500;
+      color: var(--text-color);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      padding: 30px;
+      border-radius: 8px;
+      background-color: var(--light-gray);
+      transition: var(--transition);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow);
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      color: var(--primary-color);
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 1.4rem;
+      margin-bottom: 15px;
+      font-weight: 500;
+    }
+
+    .feature-card p {
+      color: var(--light-text);
+    }
+
+    footer {
+      background-color: var(--text-color);
+      color: white;
+      padding: 40px 5% 20px;
+      text-align: center;
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 30px;
+      text-align: left;
+    }
+
+    .footer-column h3 {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+
+    .footer-column ul {
+      list-style: none;
+    }
+
+    .footer-column ul li {
+      margin-bottom: 10px;
+    }
+
+    .footer-column a {
+      color: #bdc1c6;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .footer-column a:hover {
+      color: white;
+    }
+
+    .copyright {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #3c4043;
+      color: #9aa0a6;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .hero {
+        flex-direction: column;
+        padding-top: 100px;
+        text-align: center;
+      }
+
+      .hero-content {
+        padding-right: 0;
+        margin-bottom: 40px;
+      }
+
+      .hero h1 {
+        font-size: 2.2rem;
+      }
+
+      .hero p {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .nav-links li {
+        margin-left: 15px;
+      }
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>Welcome to Your Drive</h1>
-  <p>Store and manage your files online.</p>
-  <a href="#" class="btn" th:href="@{/login}">Login</a>
-  <a href="#" class="btn" th:href="@{/register}">Register</a>
-</div>
+<nav class="navbar">
+  <div class="logo">
+    <i class="fas fa-cloud"></i>
+    <span>CloudDrive</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#">Features</a></li>
+    <li><a href="#">Pricing</a></li>
+    <li><a href="#">Support</a></li>
+    <li><a href="#" class="btn-login" th:href="@{/login}">Login</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div class="hero-content">
+    <h1>Secure cloud storage for all your files</h1>
+    <p>Store, share, and collaborate on files and folders from any device. Your files are safe with enterprise-grade security.</p>
+    <div class="cta-buttons">
+      <a href="#" class="btn" th:href="@{/register}">Get started for free</a>
+      <a href="#" class="btn btn-secondary">Learn more</a>
+    </div>
+  </div>
+  <div class="hero-image">
+    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1064&q=80" alt="Cloud storage interface">
+  </div>
+</section>
+
+<section class="features">
+  <h2>Why choose CloudDrive?</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">
+        <i class="fas fa-shield-alt"></i>
+      </div>
+      <h3>Advanced Security</h3>
+      <p>Your files are encrypted in transit and at rest with industry-leading protection.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <i class="fas fa-users"></i>
+      </div>
+      <h3>Easy Collaboration</h3>
+      <p>Share files and folders with team members and control access permissions.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <i class="fas fa-mobile-alt"></i>
+      </div>
+      <h3>Access Anywhere</h3>
+      <p>Available on all your devices - desktop, tablet, and mobile.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-content">
+    <div class="footer-column">
+      <h3>Product</h3>
+      <ul>
+        <li><a href="#">Features</a></li>
+        <li><a href="#">Pricing</a></li>
+        <li><a href="#">Apps</a></li>
+        <li><a href="#">Downloads</a></li>
+      </ul>
+    </div>
+    <div class="footer-column">
+      <h3>Company</h3>
+      <ul>
+        <li><a href="#">About us</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Press</a></li>
+        <li><a href="#">Blog</a></li>
+      </ul>
+    </div>
+    <div class="footer-column">
+      <h3>Support</h3>
+      <ul>
+        <li><a href="#">Help Center</a></li>
+        <li><a href="#">Community</a></li>
+        <li><a href="#">Contact us</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="footer-column">
+      <h3>Connect</h3>
+      <ul>
+        <li><a href="#"><i class="fab fa-twitter"></i> Twitter</a></li>
+        <li><a href="#"><i class="fab fa-facebook"></i> Facebook</a></li>
+        <li><a href="#"><i class="fab fa-instagram"></i> Instagram</a></li>
+        <li><a href="#"><i class="fab fa-linkedin"></i> LinkedIn</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="copyright">
+    <p>&copy; 2023 CloudDrive. All rights reserved.</p>
+  </div>
+</footer>
 </body>
 </html>

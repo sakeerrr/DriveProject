@@ -83,9 +83,8 @@ public class FileStorageService {
         try {
             Bucket bucket = storage.get(bucketName);
             if (bucket != null) {
-                for (Blob blob : bucket.list().iterateAll()) {
+                for (Blob blob : bucket.list(Storage.BlobListOption.prefix(userPrefix)).iterateAll()) {
                     String name = blob.getName();
-                    System.out.println(name);
                     // Return just the filename portion (after user folder)
                     fileNames.add(name.substring(userPrefix.length()));
                 }

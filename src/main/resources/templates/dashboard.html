@@ -36,20 +36,44 @@
      text-align: right;
      color: black;
     }
+
+    .button-container {
+      margin-top: 20px;
+    }
+
+    .button {
+      background-color: #ffffff;
+      color: #5e057e;
+      border: 2px solid #5e057e;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 5px;
+      border-radius: 5px;
+      text-decoration: none;
+    }
+
+    .button:hover {
+      background-color: #c299d0;
+      color: white;
+    }
   </style>
 </head>
 
 <body>
 <div class="dashboard">
-  <h1 class="dashboard_title">Welcome to the Dashboard </h1>
+  <h1 class="dashboard_title">Welcome to the Dashboard</h1>
   <div class="dashboard_user">
     <h2 th:text="${userdetail.fullname}" class="dashboard_user_name"></h2>
   </div>
   <div class="span-text">
     <span sec:authorize="isAuthenticated" style="color: white;"><a th:href="@{/logout}">Logout</a></span>
   </div>
+  <div class="button-container">
+    <a th:href="@{/download}" class="button">Download</a>
+    <a th:href="@{/upload}" class="button">Upload</a>
+  </div>
 </div>
-
 </body>
 
 </html>

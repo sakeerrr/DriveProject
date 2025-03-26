@@ -41,7 +41,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/register", "/"))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/register", "/").permitAll()
+                        // Allow CSS, JS, Images & Public Pages
+                        .requestMatchers("/", "/register", "/login", "/css/**", "/js/**", "/images/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -55,7 +56,7 @@ public class SecurityConfig {
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID")
                         .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-                        .logoutSuccessUrl("/login?logout")
+                        .logoutSuccessUrl("/")
                         .permitAll()
                 )
                 .sessionManagement(session -> session
@@ -63,7 +64,6 @@ public class SecurityConfig {
                         .invalidSessionUrl("/login?invalidSession")
                         .maximumSessions(1)
                         .expiredUrl("/login?expired")
-
                 );
 
         return http.build();

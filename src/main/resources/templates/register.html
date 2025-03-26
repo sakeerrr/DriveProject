@@ -1,113 +1,50 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.w3.org/1999/xhtml">
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 
 <head>
     <meta charset="UTF-8">
-    <title>Registration</title>
-    <style>
-        body {
-         font-family: 'Arial', sans-serif;
-         margin: 0;
-         padding: 0;
-         display: flex;
-         justify-content: center;
-         align-items: center;
-         height: 100vh;
-         background-color: #f4f4f4;
-        }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - CloudDrive</title>
+    <link rel="stylesheet" th:href="@{css/stylesRegister.css}">
 
-        .form-container {
-         background-color: #fff;
-         width: 400px;
-         padding: 20px;
-         border-radius: 8px;
-         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        h2 {
-         color: #5e057e;
-         text-align: center;
-         margin-bottom: 20px;
-        }
-
-        label {
-         display: block;
-         margin-bottom: 8px;
-         color: #5e057e;
-        }
-
-        input {
-         width: 100%;
-         padding: 8px;
-         margin-bottom: 16px;
-         border: 1px solid #ccc;
-         border-radius: 4px;
-         box-sizing: border-box;
-        }
-
-        button {
-         background-color: #5e057e;
-         color: #fff;
-         padding: 10px 20px;
-         border: none;
-         border-radius: 4px;
-         cursor: pointer;
-         font-weight: bold;
-         transition: background-color 0.3s;
-        }
-
-        button:hover {
-         background-color: #299d00;
-        }
-
-        .form-footer {
-         text-align: center;
-         margin-top: 20px;
-         color: #888;
-        }
-
-        .success-message {
-         background-color: #5e057e;
-         color: #fff;
-         padding: 10px;
-         border-radius: 3px;
-         text-align: center;
-        }
-    </style>
 </head>
 
 <body>
-<div class="form-container">
 
-    <div th:if="${param.success}">
-        <div class="success-message">
-            <p>Registration Successful!</p>
-        </div>
+<nav class="navbar">
+    <div class="logo">
+        <i class="fas fa-cloud"></i>
+        <span>CloudDrive</span>
+    </div>
+</nav>
+
+<div class="form-container">
+    <h2>Create your CloudDrive account</h2>
+
+    <div th:if="${param.success}" class="success-message">
+        <p>Registration Successful!</p>
     </div>
 
-    <h2>Registration</h2>
     <form th:action="@{/register}" method="post" role="form" th:object="${user}">
         <label for="fullname">Full Name:</label>
-        <input th:field="*{fullname}" type="text" id="fullname" name="fullname" placeholder="Enter your FullName"
-               required>
+        <input th:field="*{fullname}" type="text" id="fullname" name="fullname" placeholder="Enter your full name" required>
 
         <label for="username">Username:</label>
-        <input th:field="*{username}" type="text" id="username" name="username" placeholder="Enter your Username"
-               required>
+        <input th:field="*{username}" type="text" id="username" name="username" placeholder="Choose a username" required>
 
         <label for="password">Password:</label>
-        <input th:field="*{password}" type="password" id="password" name="password"
-               placeholder="Enter your Password" required>
+        <input th:field="*{password}" type="password" id="password" name="password" placeholder="Create a password" required>
 
-        <button type="submit">Register</button>
+        <button type="submit" class="btn">Sign Up</button>
     </form>
+
     <div>
-        <span th:if="${Userexist}" style="color: red;">Username is Taken</span>
+        <span th:if="${Userexist}" class="error-message">Username is already taken</span>
     </div>
-    <div>
-        <span class="form-footer">Already have an account? Login <a th:href="@{/login}">here</a>.</span>
-    </div>
+
+    <p class="form-footer">Already have an account? <a th:href="@{/login}">Login here</a>.</p>
 </div>
+
 </body>
 
 </html>

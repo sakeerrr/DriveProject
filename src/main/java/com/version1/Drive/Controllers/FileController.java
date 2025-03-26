@@ -33,7 +33,7 @@ public class FileController {
         String userId = getCurrentUserId(); // Get logged-in user's ID
         List<String> fileNames = fileStorageService.listFiles(userId); // Fetch list of files from GCS
         model.addAttribute("fileNames", fileNames);
-        return "download";  // Thymeleaf template
+        return "download";
     }
 
     @PostMapping("/files/upload")
@@ -51,11 +51,9 @@ public class FileController {
     public ResponseEntity<byte[]> downloadFile(@PathVariable("fileName") String fileName) {
         try {
             String userId = getCurrentUserId();
-            // Add the user folder prefix when downloading
             String fullPath = "users/" + userId + "/" + fileName;
             byte[] fileData = fileStorageService.downloadFile(userId, fullPath);
 
-            // Set proper headers for download
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                     .body(fileData);

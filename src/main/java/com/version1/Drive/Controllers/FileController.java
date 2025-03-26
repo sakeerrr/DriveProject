@@ -1,5 +1,6 @@
 package com.version1.Drive.Controllers;
 
+import com.version1.Drive.DTO.FileDTO;
 import com.version1.Drive.Services.FileStorageService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -30,9 +31,9 @@ public class FileController {
 
     @GetMapping("/download")
     public String downloadPage(Model model) {
-        String userId = getCurrentUserId(); // Get logged-in user's ID
-        List<String> fileNames = fileStorageService.listFiles(userId); // Fetch list of files from GCS
-        model.addAttribute("fileNames", fileNames);
+        String userId = getCurrentUserId();
+        List<FileDTO> files = fileStorageService.listFiles(userId);
+        model.addAttribute("files", files);
         return "download";
     }
 
@@ -47,15 +48,20 @@ public class FileController {
         }
     }
 
-    @GetMapping("/files/download/{fileName:.+}")
-    public ResponseEntity<byte[]> downloadFile(@PathVariable("fileName") String fileName) {
+
+    @GetMapping("/files/download/{uuidName:.+}")
+    public ResponseEntity<byte[]> downloadFile(@PathVariable("uuidName") String uuidName) {
         try {
             String userId = getCurrentUserId();
-            String fullPath = "users/" + userId + "/" + fileName;
+            String fullPath = "users/" + userId + "/" + uuidName;
             byte[] fileData = fileStorageService.downloadFile(userId, fullPath);
 
+            // Get original filename
+            String originalName = fileStorageService.getOriginalName(userId, uuidName);
+
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + originalName + "\"")
                     .body(fileData);
         } catch (IOException e) {
             return ResponseEntity.status(404).body(null);

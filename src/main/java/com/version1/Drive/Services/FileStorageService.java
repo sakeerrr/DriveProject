@@ -1,10 +1,8 @@
 package com.version1.Drive.Services;
 
 import com.google.auth.oauth2.ServiceAccountCredentials;
-import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.Bucket;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageOptions;
+import com.google.cloud.storage.*;
+import com.version1.Drive.DTO.FileDTO;
 import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
@@ -14,6 +12,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class FileStorageService {
@@ -43,14 +43,32 @@ public class FileStorageService {
         System.out.println("File size: " + file.getSize());
 
         String userFolder = "users/" + userId + "/";
-        String fileName = userFolder + file.getOriginalFilename();
-        System.out.println("Target path: " + fileName);
+        String originalFileName = file.getOriginalFilename(); // Get original file name
+        String fileExtension = "";
+
+        // Extract extension if available
+        if (originalFileName != null && originalFileName.contains(".")) {
+            fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
+        }
+
+        // Generate new filename with UUID (but keep original extension)
+        String uniqueFileName = UUID.randomUUID() + fileExtension;
+        String filePath = userFolder + uniqueFileName; // Store inside user folder
+
+        System.out.println("Target path: " + filePath);
 
         try {
             Bucket bucket = storage.get(bucketName);
             System.out.println("Bucket exists: " + (bucket != null));
 
-            Blob blob = bucket.create(fileName, file.getBytes(), file.getContentType());
+            // Create blob with metadata storing original filename
+            BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, filePath)
+                    .setContentType(file.getContentType())
+                    .setMetadata(Map.of("originalFilename", originalFileName)) // Store original filename in metadata
+                    .build();
+
+            Blob blob = storage.create(blobInfo, file.getBytes());
+
             System.out.println("Upload successful! Blob ID: " + blob.getBlobId());
             return blob.getMediaLink();
         } catch (Exception e) {
@@ -76,24 +94,37 @@ public class FileStorageService {
     }
 
 
-    public List<String> listFiles(String userId) {
-        List<String> fileNames = new ArrayList<>();
+    public List<FileDTO> listFiles(String userId) {
+        List<FileDTO> files = new ArrayList<>();
         String userPrefix = "users/" + userId + "/";
 
-        try {
-            Bucket bucket = storage.get(bucketName);
-            if (bucket != null) {
-                for (Blob blob : bucket.list(Storage.BlobListOption.prefix(userPrefix)).iterateAll()) {
-                    String name = blob.getName();
-                    // Return just the filename portion (after user folder)
-                    fileNames.add(name.substring(userPrefix.length()));
+        Bucket bucket = storage.get(bucketName);
+        if (bucket != null) {
+            for (Blob blob : bucket.list(Storage.BlobListOption.prefix(userPrefix)).iterateAll()) {
+                if (!blob.getName().equals(userPrefix)) {
+                    String originalName = blob.getMetadata() != null
+                            ? blob.getMetadata().get("originalFilename")
+                            : blob.getName().substring(userPrefix.length());
+
+                    files.add(new FileDTO(
+                            blob.getName().substring(userPrefix.length()), // UUID name
+                            originalName
+                    ));
                 }
             }
-        } catch (Exception e) {
-            System.err.println("Error listing files: " + e.getMessage());
         }
+        return files;
+    }
 
-        return fileNames;
+    public String getOriginalName(String userId, String uuidName) throws IOException {
+        String filePath = "users/" + userId + "/" + uuidName;
+        Blob blob = storage.get(bucketName, filePath);
+        if (blob == null) {
+            throw new IOException("File not found");
+        }
+        return blob.getMetadata() != null
+                ? blob.getMetadata().get("originalFilename")
+                : uuidName;
     }
 
 //    @GetMapping("/test-gcs")

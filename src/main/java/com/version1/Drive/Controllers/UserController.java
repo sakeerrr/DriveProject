@@ -5,6 +5,8 @@ import java.security.Principal;
 import com.version1.Drive.DTO.UserDTO;
 import com.version1.Drive.Models.UserEntity;
 import com.version1.Drive.Services.UserService;
+import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -54,7 +56,10 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public String registerSava(@ModelAttribute("user") UserDTO userDTO, Model model) {
+    public String registerSava(@Valid @ModelAttribute("user")  UserDTO userDTO, BindingResult bindingResult, Model model) {
+        if (bindingResult.hasErrors()){
+            return "/register";
+        }
         UserEntity user = userService.findByUsername(userDTO.getUsername());
         if (user != null) {
             model.addAttribute("Userexist", user);

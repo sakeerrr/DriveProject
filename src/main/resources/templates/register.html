@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - CloudDrive</title>
     <link rel="stylesheet" th:href="@{css/stylesRegister.css}">
-
 </head>
 
 <body>
@@ -25,15 +24,24 @@
         <p>Registration Successful!</p>
     </div>
 
-    <form th:action="@{/register}" method="post" role="form" th:object="${user}">
+    <form th:action="@{/register}" method="post" role="form" th:object="${user}" onsubmit="return validatePassword()">
+
         <label for="fullname">Full Name:</label>
         <input th:field="*{fullname}" type="text" id="fullname" name="fullname" placeholder="Enter your full name" required>
+        <p th:if="${#fields.hasErrors('fullname')}" th:errors="*{fullname}" class="error-message"></p>
 
         <label for="username">Username:</label>
         <input th:field="*{username}" type="text" id="username" name="username" placeholder="Choose a username" required>
+        <p th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="error-message"></p>
 
         <label for="password">Password:</label>
         <input th:field="*{password}" type="password" id="password" name="password" placeholder="Create a password" required>
+        <p th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="error-message"></p>
+
+        <label for="confirmPassword">Confirm Password:</label>
+        <input th:field="*{confirmPassword}" type="password" id="confirmPassword" name="confirmPassword" placeholder="Re-enter your password" required>
+        <p th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}" class="error-message"></p>
+        <p id="passwordError" class="error-message" style="display:none;">Passwords do not match</p>
 
         <button type="submit" class="btn">Sign Up</button>
     </form>
@@ -45,6 +53,21 @@
     <p class="form-footer">Already have an account? <a th:href="@{/login}">Login here</a>.</p>
 </div>
 
-</body>
+<script>
+    function validatePassword() {
+        let password = document.getElementById("password").value;
+        let confirmPassword = document.getElementById("confirmPassword").value;
+        let errorMessage = document.getElementById("passwordError");
 
+        if (password !== confirmPassword) {
+            errorMessage.style.display = "block";
+            return false; // Prevent form submission
+        } else {
+            errorMessage.style.display = "none";
+            return true;
+        }
+    }
+</script>
+
+</body>
 </html>

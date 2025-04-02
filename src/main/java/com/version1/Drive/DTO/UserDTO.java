@@ -1,10 +1,17 @@
 package com.version1.Drive.DTO;
 
+import com.version1.Drive.Validators.ValidPassword;
+import jakarta.validation.constraints.NotBlank;
+
 public class UserDTO {
 
     private String username;
+    @ValidPassword
     private String password;
+    @NotBlank(message = "Confirm password is required")
+    private String confirmPassword;
     private String fullname;
+
 
     public UserDTO(String username, String password, String fullname) {
         super();
@@ -27,6 +34,14 @@ public class UserDTO {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getConfirmPassword() {
+        return confirmPassword;
+    }
+
+    public void setConfirmPassword(String confirmPassword) {
+        this.confirmPassword = confirmPassword;
     }
 
     public String getFullname() {

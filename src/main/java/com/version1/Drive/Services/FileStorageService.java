@@ -23,6 +23,7 @@ public class FileStorageService {
     public FileStorageService(@Value("${spring.cloud.gcp.storage.bucket}") String bucketName) throws IOException {
         this.bucketName = bucketName;
         this.storage = initializeStorageClient();
+        logAuthenticationInfo();
     }
 
     private Storage initializeStorageClient() throws IOException {
@@ -116,14 +117,17 @@ public class FileStorageService {
 
         for (Blob blob : getAllBlobs()) {
             if (hasReadAccess(blob, userEmail)) {
-                sharedFiles.add(new FileDTO(
-                        blob.getName(),
-                        Objects.requireNonNull(blob.getMetadata()).get(ORIGINAL_FILENAME_METADATA_KEY)
-                ));
+                    sharedFiles.add(new FileDTO(
+                            blob.getName(),
+                            blob.getMetadata() != null
+                            ? blob.getMetadata().get(ORIGINAL_FILENAME_METADATA_KEY)
+                            : blob.getName()
+                    ));
             }
         }
         return sharedFiles;
     }
+
 
     private Iterable<Blob> getAllBlobs() {
         Bucket bucket = storage.get(bucketName);
@@ -135,20 +139,23 @@ public class FileStorageService {
 
     private boolean hasReadAccess(Blob blob, String userEmail) {
         Acl acl = blob.getAcl(new Acl.User(userEmail));
-        return acl != null && acl.getRole() == Acl.Role.OWNER;
+        return acl != null && acl.getRole() == Acl.Role.READER;
     }
 
     public void grantReadAccess(String objectName, String recipientEmail) {
         Blob blob = getBlobOrThrow(objectName);
-        blob.createAcl(Acl.of(new Acl.User(recipientEmail), Acl.Role.OWNER));
+        blob.createAcl(Acl.of(new Acl.User(recipientEmail), Acl.Role.READER));
     }
 
     public String getOriginalName(String filePath) throws IOException {
         Blob blob = getBlobOrThrow(filePath);
-        return blob.getMetadata() != null
-                ? blob.getMetadata().get(ORIGINAL_FILENAME_METADATA_KEY)
-                : filePath.substring(filePath.lastIndexOf('/') + 1);
+        if (blob.getMetadata() != null) {
+            return blob.getMetadata().get("originalFilename");
+        } else {
+            return filePath.substring(filePath.lastIndexOf('/') + 1);
+        }
     }
+
 
     private Blob getBlobOrThrow(String filePath) {
         Blob blob = storage.get(bucketName, filePath);

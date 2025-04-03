@@ -8,7 +8,6 @@ public class FileDTO {
     }
 
     public FileDTO(String uuidName, String originalName) {
-        super();
         this.uuidName = uuidName;
         this.originalName = originalName;
     }

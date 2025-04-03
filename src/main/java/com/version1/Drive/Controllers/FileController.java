@@ -1,5 +1,6 @@
 package com.version1.Drive.Controllers;
 
+import com.version1.Drive.Custom.CustomUserDetails;
 import com.version1.Drive.DTO.FileDTO;
 import com.version1.Drive.Services.FileStorageService;
 import org.springframework.http.HttpHeaders;
@@ -32,13 +33,16 @@ public class FileController {
     @GetMapping("/download")
     public String showDownloadPage(Model model) {
         String userId = getCurrentUserId();
+        String userEmail = getCurrentUserEmail();
         model.addAttribute("files", fileStorageService.listFiles(userId));
+        model.addAttribute("sharedFiles", fileStorageService.listSharedFiles(userEmail));
         return "download";
     }
 
     @GetMapping("/share")
     public String showSharePage(Model model) {
         String userId = getCurrentUserId();
+        String userEmail = getCurrentUserEmail();
         model.addAttribute("files", fileStorageService.listFiles(userId));
         return "share";
     }
@@ -99,4 +103,13 @@ public class FileController {
         }
         throw new SecurityException("User not authenticated");
     }
+
+    private String getCurrentUserEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails) {
+            return ((CustomUserDetails) authentication.getPrincipal()).getEmail();
+        }
+        throw new SecurityException("User not authenticated");
+    }
+
 }

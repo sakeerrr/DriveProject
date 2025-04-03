@@ -10,10 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class FileStorageService {
@@ -26,7 +23,6 @@ public class FileStorageService {
     public FileStorageService(@Value("${spring.cloud.gcp.storage.bucket}") String bucketName) throws IOException {
         this.bucketName = bucketName;
         this.storage = initializeStorageClient();
-        logAuthenticationInfo();
     }
 
     private Storage initializeStorageClient() throws IOException {
@@ -122,7 +118,7 @@ public class FileStorageService {
             if (hasReadAccess(blob, userEmail)) {
                 sharedFiles.add(new FileDTO(
                         blob.getName(),
-                        blob.getMetadata().get(ORIGINAL_FILENAME_METADATA_KEY)
+                        Objects.requireNonNull(blob.getMetadata()).get(ORIGINAL_FILENAME_METADATA_KEY)
                 ));
             }
         }

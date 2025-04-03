@@ -135,12 +135,12 @@ public class FileStorageService {
 
     private boolean hasReadAccess(Blob blob, String userEmail) {
         Acl acl = blob.getAcl(new Acl.User(userEmail));
-        return acl != null && acl.getRole() == Acl.Role.READER;
+        return acl != null && acl.getRole() == Acl.Role.OWNER;
     }
 
     public void grantReadAccess(String objectName, String recipientEmail) {
         Blob blob = getBlobOrThrow(objectName);
-        blob.createAcl(Acl.of(new Acl.User(recipientEmail), Acl.Role.READER));
+        blob.createAcl(Acl.of(new Acl.User(recipientEmail), Acl.Role.OWNER));
     }
 
     public String getOriginalName(String filePath) throws IOException {

@@ -15,7 +15,7 @@
   <form th:action="@{/files/share}" method="POST">
     <div class="mb-3">
       <label for="file" class="form-label">Select a file to share</label>
-      <select class="form-control" id="file" name="objectName" required>
+      <select class="form-control" id="file" name="fileName" required>
         <option th:each="file : ${files}"
                 th:value="${file.uuidName}"
                 th:text="${file.originalName}"></option>

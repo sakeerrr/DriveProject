@@ -80,7 +80,6 @@ public class FileController {
     public ResponseEntity<String> handleFileShare(
             @RequestParam String fileName,
             @RequestParam String recipientEmail) {
-
         try {
             String userId = getCurrentUserId();
             String filePath = buildUserFilePath(userId, fileName);
@@ -91,6 +90,7 @@ public class FileController {
                     .body("Failed to share file: " + e.getMessage());
         }
     }
+
 
     private String buildUserFilePath(String userId, String fileName) {
         return USER_FOLDER_PREFIX + userId + "/" + fileName;

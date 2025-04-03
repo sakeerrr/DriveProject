@@ -30,7 +30,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserEntity save(UserDTO userDTO) {
         UserEntity user = new UserEntity(userDTO.getUsername(), passwordEncoder.encode(userDTO.getPassword()),
-                userDTO.getFullname());
+                userDTO.getEmail());
         return userRepository.save(user);
     }
 

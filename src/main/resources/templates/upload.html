@@ -10,7 +10,6 @@
 <div class="container mt-5">
   <h1>File Upload</h1>
 
-  <!-- Add this to show messages -->
   <div th:if="${message}" class="alert alert-info" th:text="${message}"></div>
 
   <form th:action="@{/files/upload}" method="POST" enctype="multipart/form-data">

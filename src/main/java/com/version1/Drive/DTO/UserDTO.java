@@ -1,6 +1,7 @@
 package com.version1.Drive.DTO;
 
 import com.version1.Drive.Validators.ValidPassword;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public class UserDTO {
@@ -10,14 +11,15 @@ public class UserDTO {
     private String password;
     @NotBlank(message = "Confirm password is required")
     private String confirmPassword;
-    private String fullname;
+    @Email(message = "Invalid email format")
+    private String email;
 
 
-    public UserDTO(String username, String password, String fullname) {
+    public UserDTO(String username, String password, String email) {
         super();
         this.username = username;
         this.password = password;
-        this.fullname = fullname;
+        this.email = email;
     }
 
     public String getUsername() {
@@ -44,16 +46,16 @@ public class UserDTO {
         this.confirmPassword = confirmPassword;
     }
 
-    public String getFullname() {
-        return fullname;
+    public String getEmail() {
+        return email;
     }
 
-    public void setFullname(String fullname) {
-        this.fullname = fullname;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     @Override
     public String toString() {
-        return "UserDto [username=" + username + ", password=" + password + ", fullname=" + fullname + "]";
+        return "UserDto [username=" + username + ", password=" + password + ", email=" + email + "]";
     }
 }

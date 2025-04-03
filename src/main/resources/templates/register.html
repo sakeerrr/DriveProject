@@ -26,9 +26,9 @@
 
     <form th:action="@{/register}" method="post" role="form" th:object="${user}" onsubmit="return validatePassword()">
 
-        <label for="fullname">Full Name:</label>
-        <input th:field="*{fullname}" type="text" id="fullname" name="fullname" placeholder="Enter your full name" required>
-        <p th:if="${#fields.hasErrors('fullname')}" th:errors="*{fullname}" class="error-message"></p>
+        <label for="email">Email:</label>
+        <input th:field="*{email}" type="text" id="email" name="email" placeholder="Enter your email" required>
+        <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="error-message"></p>
 
         <label for="username">Username:</label>
         <input th:field="*{username}" type="text" id="username" name="username" placeholder="Choose a username" required>

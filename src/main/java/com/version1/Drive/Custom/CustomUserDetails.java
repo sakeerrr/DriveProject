@@ -10,18 +10,19 @@ public class CustomUserDetails implements UserDetails {
     private String username;
     private String password;
     private Collection<? extends GrantedAuthority> authorities;
-    private String fullname;
+    private String email;
 
     public CustomUserDetails(String username, String password, Collection<? extends GrantedAuthority> authorities,
-                             String fullname) {
+                             String email) {
         this.username = username;
         this.password = password;
         this.authorities = authorities;
-        this.fullname = fullname;
+        this.email = email;
     }
 
-    public String getFullname() {
-        return fullname;
+
+    public String getEmail() {
+        return email;
     }
 
     @Override
@@ -33,6 +34,7 @@ public class CustomUserDetails implements UserDetails {
     public String getPassword() {
         return password;
     }
+
 
     @Override
     public String getUsername() {

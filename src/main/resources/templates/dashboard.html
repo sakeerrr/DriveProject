@@ -19,7 +19,7 @@
   </div>
   <div class="user-nav">
     <div class="user-info" th:if="${userdetail}">
-      <div class="user-name" th:text="${userdetail.fullname ?: 'User'}"></div>
+      <div class="user-name" th:text="${userdetail.username ?: 'User'}"></div>
     </div>
     <a href="#" class="btn-logout" th:href="@{/logout}">Logout</a>
   </div>
@@ -30,7 +30,7 @@
     <h1 class="dashboard-title">Your CloudDrive Dashboard</h1>
     <p class="welcome-message">Access and manage all your files in one secure place</p>
     <div class="user-greeting" th:if="${userdetail}">
-      Welcome back, <span th:text="${userdetail.fullname ?: 'User'}"></span>!
+      Welcome back, <span th:text="${userdetail.username ?: 'User'}"></span>!
     </div>
   </div>
 
@@ -59,23 +59,11 @@
       </div>
       <h3 class="action-title">Share Files</h3>
       <p class="action-description">Collaborate by sharing files with team members</p>
-      <a href="#" class="action-button">Share Now</a>
+      <a th:href="@{/share}" class="action-button">Share Now</a>
     </div>
   </div>
 
-<!--  <div class="storage-info">-->
-<!--    <div class="storage-header">-->
-<!--      <h3 class="storage-title">Storage Usage</h3>-->
-<!--      <div class="storage-status">35% used</div>-->
-<!--    </div>-->
-<!--    <div class="progress-bar">-->
-<!--      <div class="progress"></div>-->
-<!--    </div>-->
-<!--    <div class="storage-details">-->
-<!--      <span>15.2 GB of 50 GB used</span>-->
-<!--      <span><a href="#" style="color: var(&#45;&#45;primary-color);">Upgrade storage</a></span>-->
-<!--    </div>-->
-<!--  </div>-->
+
 </div>
 </body>
 </html>

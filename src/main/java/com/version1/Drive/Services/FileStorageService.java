@@ -3,11 +3,11 @@ package com.version1.Drive.Services;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.*;
 import com.version1.Drive.DTO.FileDTO;
-import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -17,126 +17,148 @@ import java.util.UUID;
 
 @Service
 public class FileStorageService {
+    private static final String USERS_FOLDER_PREFIX = "users/";
+    private static final String ORIGINAL_FILENAME_METADATA_KEY = "originalFilename";
 
     private final Storage storage;
+    private final String bucketName;
 
-    @Value("${spring.cloud.gcp.storage.bucket}")
-    private String bucketName;
+    public FileStorageService(@Value("${spring.cloud.gcp.storage.bucket}") String bucketName) throws IOException {
+        this.bucketName = bucketName;
+        this.storage = initializeStorageClient();
+        logAuthenticationInfo();
+    }
 
-    public FileStorageService() throws IOException {
-        // Load credentials directly from the classpath
+    private Storage initializeStorageClient() throws IOException {
         InputStream keyFile = new ClassPathResource("driveproject-454710-370c5a1e54b4.json").getInputStream();
-        this.storage = StorageOptions.newBuilder()
+        return StorageOptions.newBuilder()
                 .setCredentials(ServiceAccountCredentials.fromStream(keyFile))
                 .build()
                 .getService();
-
-        // Debug: Print authenticated email
-        System.out.println("Authenticating as: " +
-                ((ServiceAccountCredentials) storage.getOptions().getCredentials()).getClientEmail());
     }
 
-    // Upload file to GCS
+    private void logAuthenticationInfo() {
+        if (storage.getOptions().getCredentials() instanceof ServiceAccountCredentials) {
+            String clientEmail = ((ServiceAccountCredentials) storage.getOptions().getCredentials()).getClientEmail();
+            System.out.println("Authenticating as: " + clientEmail);
+        }
+    }
+
     public String uploadFile(MultipartFile file, String userId) throws IOException {
-        System.out.println("Starting upload for user: " + userId);
-        System.out.println("Bucket: " + bucketName);
-        System.out.println("File size: " + file.getSize());
+        validateFile(file);
+        String filePath = buildFilePath(userId, file.getOriginalFilename());
 
-        String userFolder = "users/" + userId + "/";
-        String originalFileName = file.getOriginalFilename(); // Get original file name
-        String fileExtension = "";
+        BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, filePath)
+                .setContentType(file.getContentType())
+                .setMetadata(Map.of(ORIGINAL_FILENAME_METADATA_KEY, file.getOriginalFilename()))
+                .build();
 
-        // Extract extension if available
-        if (originalFileName != null && originalFileName.contains(".")) {
-            fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
-        }
+        Blob blob = storage.create(blobInfo, file.getBytes());
+        return blob.getMediaLink();
+    }
 
-        // Generate new filename with UUID (but keep original extension)
-        String uniqueFileName = UUID.randomUUID() + fileExtension;
-        String filePath = userFolder + uniqueFileName; // Store inside user folder
-
-        System.out.println("Target path: " + filePath);
-
-        try {
-            Bucket bucket = storage.get(bucketName);
-            System.out.println("Bucket exists: " + (bucket != null));
-
-            // Create blob with metadata storing original filename
-            BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, filePath)
-                    .setContentType(file.getContentType())
-                    .setMetadata(Map.of("originalFilename", originalFileName)) // Store original filename in metadata
-                    .build();
-
-            Blob blob = storage.create(blobInfo, file.getBytes());
-
-            System.out.println("Upload successful! Blob ID: " + blob.getBlobId());
-            return blob.getMediaLink();
-        } catch (Exception e) {
-            System.err.println("Upload failed: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
+    private void validateFile(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File cannot be null or empty");
         }
     }
 
-    public byte[] downloadFile(String userId, String fileName) throws IOException {
-        String filePath = fileName;
-        System.out.println("Fetching file from path: " + filePath);
+    private String buildFilePath(String userId, String originalFilename) {
+        String userFolder = USERS_FOLDER_PREFIX + userId + "/";
+        String fileExtension = extractFileExtension(originalFilename);
+        String uniqueFileName = UUID.randomUUID() + fileExtension;
+        return userFolder + uniqueFileName;
+    }
 
-        Blob blob = storage.get(bucketName, filePath);
-        if (blob == null) {
-            System.err.println("File not found: " + filePath);
-            throw new IOException("File not found");
+    private String extractFileExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return "";
         }
+        return filename.substring(filename.lastIndexOf("."));
+    }
 
+    public byte[] downloadFile(String filePath) throws IOException {
+        Blob blob = getBlobOrThrow(filePath);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         blob.downloadTo(outputStream);
         return outputStream.toByteArray();
     }
 
-
     public List<FileDTO> listFiles(String userId) {
         List<FileDTO> files = new ArrayList<>();
-        String userPrefix = "users/" + userId + "/";
+        String userPrefix = USERS_FOLDER_PREFIX + userId + "/";
 
-        Bucket bucket = storage.get(bucketName);
-        if (bucket != null) {
-            for (Blob blob : bucket.list(Storage.BlobListOption.prefix(userPrefix)).iterateAll()) {
-                if (!blob.getName().equals(userPrefix)) {
-                    String originalName = blob.getMetadata() != null
-                            ? blob.getMetadata().get("originalFilename")
-                            : blob.getName().substring(userPrefix.length());
-
-                    files.add(new FileDTO(
-                            blob.getName().substring(userPrefix.length()), // UUID name
-                            originalName
-                    ));
-                }
+        for (Blob blob : getBlobsWithPrefix(userPrefix)) {
+            if (!blob.getName().equals(userPrefix)) {
+                files.add(createFileDTOFromBlob(blob, userPrefix));
             }
         }
         return files;
     }
 
-    public String getOriginalName(String userId, String uuidName) throws IOException {
-        String filePath = "users/" + userId + "/" + uuidName;
-        Blob blob = storage.get(bucketName, filePath);
-        if (blob == null) {
-            throw new IOException("File not found");
+    private Iterable<Blob> getBlobsWithPrefix(String prefix) {
+        Bucket bucket = storage.get(bucketName);
+        if (bucket == null) {
+            return List.of();
         }
-        return blob.getMetadata() != null
-                ? blob.getMetadata().get("originalFilename")
-                : uuidName;
+        return bucket.list(Storage.BlobListOption.prefix(prefix)).iterateAll();
     }
 
-//    @GetMapping("/test-gcs")
-//    public ResponseEntity<String> testGcs() {
-//        try {
-//            Bucket bucket = storage.get(bucketName);
-//            return ResponseEntity.ok("Connected to bucket: " + bucket.getName());
-//        } catch (Exception e) {
-//            return ResponseEntity.status(500)
-//                    .body("Connection failed: " + e.getMessage());
-//        }
-//    }
+    private FileDTO createFileDTOFromBlob(Blob blob, String userPrefix) {
+        String originalName = blob.getMetadata() != null
+                ? blob.getMetadata().get(ORIGINAL_FILENAME_METADATA_KEY)
+                : blob.getName().substring(userPrefix.length());
 
+        return new FileDTO(
+                blob.getName().substring(userPrefix.length()),
+                originalName
+        );
+    }
 
+    public List<FileDTO> listSharedFiles(String userEmail) {
+        List<FileDTO> sharedFiles = new ArrayList<>();
+
+        for (Blob blob : getAllBlobs()) {
+            if (hasReadAccess(blob, userEmail)) {
+                sharedFiles.add(new FileDTO(
+                        blob.getName(),
+                        blob.getMetadata().get(ORIGINAL_FILENAME_METADATA_KEY)
+                ));
+            }
+        }
+        return sharedFiles;
+    }
+
+    private Iterable<Blob> getAllBlobs() {
+        Bucket bucket = storage.get(bucketName);
+        if (bucket == null) {
+            return List.of();
+        }
+        return bucket.list().iterateAll();
+    }
+
+    private boolean hasReadAccess(Blob blob, String userEmail) {
+        Acl acl = blob.getAcl(new Acl.User(userEmail));
+        return acl != null && acl.getRole() == Acl.Role.READER;
+    }
+
+    public void grantReadAccess(String objectName, String recipientEmail) {
+        Blob blob = getBlobOrThrow(objectName);
+        blob.createAcl(Acl.of(new Acl.User(recipientEmail), Acl.Role.READER));
+    }
+
+    public String getOriginalName(String filePath) throws IOException {
+        Blob blob = getBlobOrThrow(filePath);
+        return blob.getMetadata() != null
+                ? blob.getMetadata().get(ORIGINAL_FILENAME_METADATA_KEY)
+                : filePath.substring(filePath.lastIndexOf('/') + 1);
+    }
+
+    private Blob getBlobOrThrow(String filePath) {
+        Blob blob = storage.get(bucketName, filePath);
+        if (blob == null) {
+            throw new RuntimeException("File not found: " + filePath);
+        }
+        return blob;
+    }
 }

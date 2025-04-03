@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
 
 @Controller
 public class FileController {
+    private static final String USER_FOLDER_PREFIX = "users/";
 
     private final FileStorageService fileStorageService;
 
@@ -25,54 +25,77 @@ public class FileController {
     }
 
     @GetMapping("/upload")
-    public String uploadPage() {
+    public String showUploadPage() {
         return "upload";
     }
 
     @GetMapping("/download")
-    public String downloadPage(Model model) {
+    public String showDownloadPage(Model model) {
         String userId = getCurrentUserId();
-        List<FileDTO> files = fileStorageService.listFiles(userId);
-        model.addAttribute("files", files);
+        model.addAttribute("files", fileStorageService.listFiles(userId));
         return "download";
     }
 
+    @GetMapping("/share")
+    public String showSharePage(Model model) {
+        String userId = getCurrentUserId();
+        model.addAttribute("files", fileStorageService.listFiles(userId));
+        return "share";
+    }
+
     @PostMapping("/files/upload")
-    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file) {
         try {
             String userId = getCurrentUserId();
             String fileUrl = fileStorageService.uploadFile(file, userId);
-            return ResponseEntity.ok("File uploaded: " + fileUrl);
+            return ResponseEntity.ok("File uploaded successfully: " + fileUrl);
         } catch (IOException e) {
-            return ResponseEntity.status(500).body("Upload failed: " + e.getMessage());
+            return ResponseEntity.internalServerError()
+                    .body("File upload failed: " + e.getMessage());
         }
     }
 
-
-    @GetMapping("/files/download/{uuidName:.+}")
-    public ResponseEntity<byte[]> downloadFile(@PathVariable("uuidName") String uuidName) {
+    @GetMapping("/files/download/{fileName:.+}")
+    public ResponseEntity<byte[]> handleFileDownload(@PathVariable String fileName) {
         try {
             String userId = getCurrentUserId();
-            String fullPath = "users/" + userId + "/" + uuidName;
-            byte[] fileData = fileStorageService.downloadFile(userId, fullPath);
-
-            // Get original filename
-            String originalName = fileStorageService.getOriginalName(userId, uuidName);
+            String filePath = buildUserFilePath(userId, fileName);
+            byte[] fileData = fileStorageService.downloadFile(filePath);
+            String originalName = fileStorageService.getOriginalName(filePath);
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION,
                             "attachment; filename=\"" + originalName + "\"")
                     .body(fileData);
         } catch (IOException e) {
-            return ResponseEntity.status(404).body(null);
+            return ResponseEntity.notFound().build();
         }
+    }
+
+    @PostMapping("/files/share")
+    public ResponseEntity<String> handleFileShare(
+            @RequestParam String fileName,
+            @RequestParam String recipientEmail) {
+
+        try {
+            String userId = getCurrentUserId();
+            String filePath = buildUserFilePath(userId, fileName);
+            fileStorageService.grantReadAccess(filePath, recipientEmail);
+            return ResponseEntity.ok("File shared successfully with " + recipientEmail);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body("Failed to share file: " + e.getMessage());
+        }
+    }
+
+    private String buildUserFilePath(String userId, String fileName) {
+        return USER_FOLDER_PREFIX + userId + "/" + fileName;
     }
 
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            return userDetails.getUsername();
+            return ((UserDetails) authentication.getPrincipal()).getUsername();
         }
         throw new SecurityException("User not authenticated");
     }

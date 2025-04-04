@@ -83,7 +83,7 @@ public class FileController {
         try {
             String userId = getCurrentUserId();
             String filePath = buildUserFilePath(userId, fileName);
-            fileStorageService.grantReadAccess(filePath, recipientEmail);
+            fileStorageService.shareFileToUser(filePath, recipientEmail);
             return ResponseEntity.ok("File shared successfully with " + recipientEmail);
         } catch (Exception e) {
             return ResponseEntity.badRequest()

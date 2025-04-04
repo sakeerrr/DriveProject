@@ -3,13 +3,15 @@ package com.version1.Drive.DTO;
 public class FileDTO {
     private String uuidName;
     private String originalName;
+    private String sharedBy;
 
     public FileDTO() {
     }
 
-    public FileDTO(String uuidName, String originalName) {
+    public FileDTO(String uuidName, String originalName, String sharedBy) {
         this.uuidName = uuidName;
         this.originalName = originalName;
+        this.sharedBy = sharedBy;
     }
 
     public String getUuidName() {
@@ -26,5 +28,13 @@ public class FileDTO {
 
     public void setOriginalName(String originalName) {
         this.originalName = originalName;
+    }
+
+    public String getSharedBy() {
+        return sharedBy;
+    }
+
+    public void setSharedBy(String sharedBy) {
+        this.sharedBy = sharedBy;
     }
 }

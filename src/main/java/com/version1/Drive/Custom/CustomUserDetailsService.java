@@ -33,8 +33,16 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new CustomUserDetails(user.getUsername(), user.getPassword(), authorities(), user.getEmail());
     }
 
+    public UserDetails loadUserByEmail(String email) throws UsernameNotFoundException {
+
+        UserEntity user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new UsernameNotFoundException("Username or Password not found");
+        }
+        return new CustomUserDetails(user.getUsername(), user.getPassword(), authorities(), user.getEmail());
+    }
+
     public Collection<? extends GrantedAuthority> authorities() {
         return Arrays.asList(new SimpleGrantedAuthority("USER"));
     }
-
 }

@@ -2,9 +2,14 @@ package com.version1.Drive.Services;
 
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.*;
+import com.version1.Drive.Custom.CustomUserDetailsService;
 import com.version1.Drive.DTO.FileDTO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
@@ -19,6 +24,9 @@ public class FileStorageService {
 
     private final Storage storage;
     private final String bucketName;
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
+
 
     public FileStorageService(@Value("${spring.cloud.gcp.storage.bucket}") String bucketName) throws IOException {
         this.bucketName = bucketName;
@@ -45,9 +53,13 @@ public class FileStorageService {
         validateFile(file);
         String filePath = buildFilePath(userId, file.getOriginalFilename());
 
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put(ORIGINAL_FILENAME_METADATA_KEY, file.getOriginalFilename());
+        metadata.put("ORIGINAL_OWNER", userId);
+
         BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, filePath)
                 .setContentType(file.getContentType())
-                .setMetadata(Map.of(ORIGINAL_FILENAME_METADATA_KEY, file.getOriginalFilename()))
+                .setMetadata(metadata)
                 .build();
 
         Blob blob = storage.create(blobInfo, file.getBytes());
@@ -87,7 +99,9 @@ public class FileStorageService {
 
         for (Blob blob : getBlobsWithPrefix(userPrefix)) {
             if (!blob.getName().equals(userPrefix)) {
-                files.add(createFileDTOFromBlob(blob, userPrefix));
+                if (blob.getMetadata() == null || blob.getMetadata().get("sharedBy") == null) {
+                    files.add(createFileDTOFromBlob(blob, userPrefix));
+                }
             }
         }
         return files;
@@ -105,24 +119,28 @@ public class FileStorageService {
         String originalName = blob.getMetadata() != null
                 ? blob.getMetadata().get(ORIGINAL_FILENAME_METADATA_KEY)
                 : blob.getName().substring(userPrefix.length());
+        String sharedBy = blob.getMetadata() != null ? blob.getMetadata().get("sharedBy") : null;
 
         return new FileDTO(
                 blob.getName().substring(userPrefix.length()),
-                originalName
+                originalName,
+                sharedBy
+
         );
     }
 
     public List<FileDTO> listSharedFiles(String userEmail) {
         List<FileDTO> sharedFiles = new ArrayList<>();
+        UserDetails user = userDetailsService.loadUserByEmail(userEmail);
+        String userId = user.getUsername();
+        String userPrefix = USERS_FOLDER_PREFIX + userId + "/";
 
-        for (Blob blob : getAllBlobs()) {
-            if (hasReadAccess(blob, userEmail)) {
-                    sharedFiles.add(new FileDTO(
-                            blob.getName(),
-                            blob.getMetadata() != null
-                            ? blob.getMetadata().get(ORIGINAL_FILENAME_METADATA_KEY)
-                            : blob.getName()
-                    ));
+
+        for (Blob blob : getBlobsWithPrefix(userPrefix)) {
+            if (!blob.getName().equals(userPrefix)) {
+                if (blob.getMetadata() != null && blob.getMetadata().get("sharedBy") != null) {
+                    sharedFiles.add(createFileDTOFromBlob(blob, userPrefix));
+                }
             }
         }
         return sharedFiles;
@@ -137,15 +155,34 @@ public class FileStorageService {
         return bucket.list().iterateAll();
     }
 
-    private boolean hasReadAccess(Blob blob, String userEmail) {
-        Acl acl = blob.getAcl(new Acl.User(userEmail));
-        return acl != null && acl.getRole() == Acl.Role.READER;
+
+    public void shareFileToUser(String sourceObjectPath, String recipientEmail) throws IOException {
+        Blob sourceBlob = getBlobOrThrow(sourceObjectPath);
+
+        String originalFilename = getOriginalName(sourceObjectPath);
+
+        String recipientUserId = getRecipientUserId(recipientEmail);
+
+        String destinationPath = buildFilePath(recipientUserId, originalFilename);
+
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put(ORIGINAL_FILENAME_METADATA_KEY, originalFilename);
+        metadata.put("sharedBy", sourceBlob.getMetadata() != null
+                ? sourceBlob.getMetadata().getOrDefault("ORIGINAL_OWNER", "unknown")
+                : "unknown");
+
+        Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
+                .setSource(BlobId.of(bucketName, sourceObjectPath))
+                .setTarget(BlobInfo.newBuilder(bucketName, destinationPath)
+                        .setContentType(sourceBlob.getContentType())
+                        .setMetadata(metadata)
+                        .build())
+                .build();
+
+        storage.copy(request);
     }
 
-    public void grantReadAccess(String objectName, String recipientEmail) {
-        Blob blob = getBlobOrThrow(objectName);
-        blob.createAcl(Acl.of(new Acl.User(recipientEmail), Acl.Role.READER));
-    }
+
 
     public String getOriginalName(String filePath) throws IOException {
         Blob blob = getBlobOrThrow(filePath);
@@ -164,5 +201,17 @@ public class FileStorageService {
         }
         return blob;
     }
+
+    private String getRecipientUserId(String recipientEmail){
+        UserDetails recipient = userDetailsService.loadUserByEmail(recipientEmail);
+        String recipientUserId = recipient.getUsername();
+        if (recipientUserId == null) {
+            throw new IllegalArgumentException("Recipient not found: " + recipientEmail);
+        }
+        else {
+            return recipientUserId;
+        }
+    }
+
 }
 //a

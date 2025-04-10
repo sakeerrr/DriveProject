@@ -1,7 +1,6 @@
 package com.version1.Drive.Controllers;
 
 import com.version1.Drive.Custom.CustomUserDetails;
-import com.version1.Drive.DTO.FileDTO;
 import com.version1.Drive.Services.FileStorageService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +11,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+
 
 @Controller
 public class FileController {
@@ -42,22 +43,26 @@ public class FileController {
     @GetMapping("/share")
     public String showSharePage(Model model) {
         String userId = getCurrentUserId();
-        String userEmail = getCurrentUserEmail();
         model.addAttribute("files", fileStorageService.listFiles(userId));
         return "share";
     }
 
     @PostMapping("/files/upload")
-    public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file) {
+    public String handleFileUpload(@RequestParam("file") MultipartFile file,
+                                   RedirectAttributes redirectAttributes) {
         try {
             String userId = getCurrentUserId();
-            String fileUrl = fileStorageService.uploadFile(file, userId);
-            return ResponseEntity.ok("File uploaded successfully: " + fileUrl);
+            fileStorageService.uploadFile(file, userId);
+
+            redirectAttributes.addFlashAttribute("message", "File uploaded successfully");
+            return "redirect:/upload";
         } catch (IOException e) {
-            return ResponseEntity.internalServerError()
-                    .body("File upload failed: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("message", "File upload failed");
+            return "redirect:/upload";
         }
     }
+
+
 
     @GetMapping("/files/download/{fileName:.+}")
     public ResponseEntity<byte[]> handleFileDownload(@PathVariable String fileName) {
@@ -77,17 +82,19 @@ public class FileController {
     }
 
     @PostMapping("/files/share")
-    public ResponseEntity<String> handleFileShare(
+    public String handleFileShare(
             @RequestParam String fileName,
-            @RequestParam String recipientEmail) {
+            @RequestParam String recipientEmail,
+            RedirectAttributes redirectAttributes) {
         try {
             String userId = getCurrentUserId();
             String filePath = buildUserFilePath(userId, fileName);
             fileStorageService.shareFileToUser(filePath, recipientEmail);
-            return ResponseEntity.ok("File shared successfully with " + recipientEmail);
+            redirectAttributes.addFlashAttribute("message", "File shared successfully");
+            return "redirect:/share";
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body("Failed to share file: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("message", "File share failed");
+            return "redirect:/share";
         }
     }
 

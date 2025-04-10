@@ -28,7 +28,7 @@ A cloud-based file storage and sharing service, similar to Google Drive, built u
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/sakeerrr/DriveProject
+   git clone https://github.com/sakeerrr/DriveProject.git
 
 2. **You should have a GCS credentials json key and cookies.txt file**
 

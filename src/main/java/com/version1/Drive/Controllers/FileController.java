@@ -1,6 +1,7 @@
 package com.version1.Drive.Controllers;
 
 import com.version1.Drive.Custom.CustomUserDetails;
+import com.version1.Drive.DTO.FileDTO;
 import com.version1.Drive.Services.FileStorageService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.util.List;
 
 
 @Controller
@@ -32,18 +34,25 @@ public class FileController {
     }
 
     @GetMapping("/download")
-    public String showDownloadPage(Model model) {
+    public String showDownloadPage(@RequestParam(value = "query", required = false) String query,
+                                   @RequestParam(value = "activeTab", defaultValue = "myFiles") String activeTab,
+                                   Model model) throws IOException {
         String userId = getCurrentUserId();
         String userEmail = getCurrentUserEmail();
-        model.addAttribute("files", fileStorageService.listFiles(userId));
-        model.addAttribute("sharedFiles", fileStorageService.listSharedFiles(userEmail));
+        List<FileDTO> files = fileStorageService.listFiles(userId, query);
+        List<FileDTO> sharedFiles = fileStorageService.listSharedFiles(userEmail, query);
+
+        model.addAttribute("files", files);
+        model.addAttribute("sharedFiles", sharedFiles);
+        model.addAttribute("query", query);
+        model.addAttribute("activeTab", activeTab);
         return "download";
     }
 
     @GetMapping("/share")
-    public String showSharePage(Model model) {
+    public String showSharePage(Model model) throws IOException {
         String userId = getCurrentUserId();
-        model.addAttribute("files", fileStorageService.listFiles(userId));
+        model.addAttribute("files", fileStorageService.listFiles(userId, null));
         return "share";
     }
 
@@ -62,6 +71,22 @@ public class FileController {
         }
     }
 
+    @PostMapping("/files/delete/{fileName:.+}")
+    public String handleFileDeletion(@PathVariable String fileName,
+                                     RedirectAttributes redirectAttributes) {
+        try {
+            String userId = getCurrentUserId();
+            String filePath = buildUserFilePath(userId, fileName);
+
+            fileStorageService.deleteFile(filePath);
+
+            redirectAttributes.addFlashAttribute("message", "File deleted successfully");
+            return "redirect:/download";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message", "Failed to delete file: " + e.getMessage());
+            return "redirect:/download";
+        }
+    }
 
 
     @GetMapping("/files/download/{fileName:.+}")

@@ -25,6 +25,10 @@
       border: 1px solid #ddd;
       border-radius: 5px;
     }
+    .file-actions {
+      display: flex;
+      gap: 10px;
+    }
   </style>
 </head>
 <body>
@@ -35,12 +39,14 @@
   <div th:if="${message}" class="alert alert-info" th:text="${message}"></div>
 
   <!-- Tabs for switching between sections -->
-  <ul class="nav nav-pills">
+  <ul class="nav nav-pills mb-3">
     <li class="nav-item">
-      <a class="nav-link active" id="myFilesTab" data-bs-toggle="pill" href="#myFiles">My Files</a>
+      <a class="nav-link" th:classappend="${activeTab == 'myFiles' ? 'active' : ''}"
+         id="myFilesTab" data-bs-toggle="pill" href="#myFiles">My Files</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="sharedFilesTab" data-bs-toggle="pill" href="#sharedFiles">Shared Files</a>
+      <a class="nav-link" th:classappend="${activeTab == 'sharedFiles' ? 'active' : ''}"
+         id="sharedFilesTab" data-bs-toggle="pill" href="#sharedFiles">Shared Files</a>
     </li>
   </ul>
 
@@ -48,27 +54,66 @@
   <div class="tab-content">
 
     <!-- My Files Section -->
-    <div class="tab-pane fade show active" id="myFiles">
+    <div class="tab-pane fade" th:classappend="${activeTab == 'myFiles' ? 'show active' : ''}" id="myFiles">
       <h3>My Files</h3>
-      <ul class="list-group">
+
+      <!-- Search Bar -->
+      <form method="get" th:action="@{/download}" class="mb-3 d-flex" role="search">
+        <input type="hidden" name="activeTab" value="myFiles">
+        <input class="form-control me-2" type="search" name="query" placeholder="Search my files"
+               th:value="${query}" aria-label="Search">
+        <button class="btn btn-outline-primary" type="submit">Search</button>
+      </form>
+
+      <!-- Files List -->
+      <div th:if="${files.empty}" class="alert alert-info">No files found</div>
+      <ul th:unless="${files.empty}" class="list-group">
         <li th:each="file : ${files}" class="list-group-item d-flex justify-content-between align-items-center">
-          <span th:text="${file.originalName}"></span>
-          <a th:href="@{'/files/download/' + ${file.uuidName}}" class="btn btn-primary btn-sm">
-            <i class="bi bi-download"></i> Download
-          </a>
+          <div>
+            <span th:text="${file.originalName}"></span>
+            <small class="text-muted d-block" th:if="${file.sharedBy}"
+                   th:text="'Shared by: ' + ${file.sharedBy}"></small>
+          </div>
+          <div class="file-actions">
+            <a th:href="@{'/files/download/' + ${file.uuidName}}" class="btn btn-primary btn-sm">
+              <i class="bi bi-download"></i> Download
+            </a>
+            <form th:action="@{'/files/delete/' + ${file.uuidName}}" method="post" class="d-inline">
+              <button type="submit" class="btn btn-danger btn-sm">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+            </form>
+          </div>
         </li>
       </ul>
     </div>
 
     <!-- Shared Files Section -->
-    <div class="tab-pane fade" id="sharedFiles">
+    <div class="tab-pane fade" th:classappend="${activeTab == 'sharedFiles' ? 'show active' : ''}" id="sharedFiles">
       <h3>Shared Files</h3>
-      <ul class="list-group">
+
+      <!-- Search Bar -->
+      <form method="get" th:action="@{/download}" class="mb-3 d-flex" role="search">
+        <input type="hidden" name="activeTab" value="sharedFiles">
+        <input class="form-control me-2" type="search" name="query" placeholder="Search shared files"
+               th:value="${query}" aria-label="Search">
+        <button class="btn btn-outline-primary" type="submit">Search</button>
+      </form>
+
+      <!-- Shared Files List -->
+      <div th:if="${sharedFiles.empty}" class="alert alert-info">No shared files found</div>
+      <ul th:unless="${sharedFiles.empty}" class="list-group">
         <li th:each="file : ${sharedFiles}" class="list-group-item d-flex justify-content-between align-items-center">
-          <span th:text="${file.originalName}"></span>
-          <a th:href="@{'/files/download/' + ${file.uuidName}}" class="btn btn-success btn-sm">
-            <i class="bi bi-download"></i> Download
-          </a>
+          <div>
+            <span th:text="${file.originalName}"></span>
+            <small class="text-muted d-block" th:if="${file.sharedBy}"
+                   th:text="'Shared by: ' + ${file.sharedBy}"></small>
+          </div>
+          <div class="file-actions">
+            <a th:href="@{'/files/download/' + ${file.uuidName}}" class="btn btn-success btn-sm">
+              <i class="bi bi-download"></i> Download
+            </a>
+          </div>
         </li>
       </ul>
     </div>
@@ -79,5 +124,15 @@
 <!-- Add Bootstrap Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Activate the correct tab on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    const activeTab = '[[${activeTab}]]' || 'myFiles';
+    const tabElement = document.querySelector(`#${activeTab}Tab`);
+    if (tabElement) {
+      new bootstrap.Tab(tabElement).show();
+    }
+  });
+</script>
 </body>
 </html>

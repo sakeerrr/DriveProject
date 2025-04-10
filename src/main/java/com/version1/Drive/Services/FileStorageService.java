@@ -47,7 +47,7 @@ public class FileStorageService {
         }
     }
 
-    public String uploadFile(MultipartFile file, String userId) throws IOException {
+    public void uploadFile(MultipartFile file, String userId) throws IOException {
         validateFile(file);
         String filePath = buildFilePath(userId, file.getOriginalFilename());
 
@@ -61,7 +61,7 @@ public class FileStorageService {
                 .build();
 
         Blob blob = storage.create(blobInfo, file.getBytes());
-        return blob.getMediaLink();
+        blob.getMediaLink();
     }
 
     private void validateFile(MultipartFile file) throws IOException {
@@ -91,19 +91,62 @@ public class FileStorageService {
         return outputStream.toByteArray();
     }
 
-    public List<FileDTO> listFiles(String userId) {
+    public void deleteFile(String filePath) throws RuntimeException{
+        Blob blob = getBlobOrThrow(filePath);
+        boolean deleted = storage.delete(blob.getBlobId());
+        if (!deleted) {
+            throw new RuntimeException("Failed to delete file");
+        }
+    }
+
+    public List<FileDTO> listFiles(String userId, String query) throws IOException {
         List<FileDTO> files = new ArrayList<>();
         String userPrefix = USERS_FOLDER_PREFIX + userId + "/";
 
         for (Blob blob : getBlobsWithPrefix(userPrefix)) {
             if (!blob.getName().equals(userPrefix)) {
-                if (blob.getMetadata() == null || blob.getMetadata().get("sharedBy") == null) {
-                    files.add(createFileDTOFromBlob(blob, userPrefix));
+                Map<String, String> metadata = blob.getMetadata();
+                System.out.println("File: " + blob.getName() + " Metadata: " + metadata);
+                boolean isShared = metadata != null && metadata.get("sharedBy") != null;
+
+                if (!isShared) {
+                    String fileName = getOriginalName(blob.getName());
+
+                    if (query == null || fileName.toLowerCase().contains(query.trim().toLowerCase())) {
+                        files.add(createFileDTOFromBlob(blob, userPrefix));
+                    }
                 }
             }
         }
+
         return files;
     }
+
+    public List<FileDTO> listSharedFiles(String userEmail, String query) throws IOException {
+        List<FileDTO> sharedFiles = new ArrayList<>();
+        UserDetails user = userDetailsService.loadUserByEmail(userEmail);
+        String userId = user.getUsername();
+        String userPrefix = USERS_FOLDER_PREFIX + userId + "/";
+
+
+        for (Blob blob : getBlobsWithPrefix(userPrefix)) {
+            if (!blob.getName().equals(userPrefix)) {
+                Map<String, String> metadata = blob.getMetadata();
+                System.out.println("File: " + blob.getName() + " Metadata: " + metadata);
+                boolean isShared = metadata != null && metadata.get("sharedBy") != null;
+
+                if (isShared) {
+                    String fileName = getOriginalName(blob.getName());
+
+                    if (query == null || fileName.toLowerCase().contains(query.trim().toLowerCase())) {
+                        sharedFiles.add(createFileDTOFromBlob(blob, userPrefix));
+                    }
+                }
+            }
+        }
+        return sharedFiles;
+    }
+
 
     private Iterable<Blob> getBlobsWithPrefix(String prefix) {
         Bucket bucket = storage.get(bucketName);
@@ -125,23 +168,6 @@ public class FileStorageService {
                 sharedBy
 
         );
-    }
-
-    public List<FileDTO> listSharedFiles(String userEmail) {
-        List<FileDTO> sharedFiles = new ArrayList<>();
-        UserDetails user = userDetailsService.loadUserByEmail(userEmail);
-        String userId = user.getUsername();
-        String userPrefix = USERS_FOLDER_PREFIX + userId + "/";
-
-
-        for (Blob blob : getBlobsWithPrefix(userPrefix)) {
-            if (!blob.getName().equals(userPrefix)) {
-                if (blob.getMetadata() != null && blob.getMetadata().get("sharedBy") != null) {
-                    sharedFiles.add(createFileDTOFromBlob(blob, userPrefix));
-                }
-            }
-        }
-        return sharedFiles;
     }
 
 

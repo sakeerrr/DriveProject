@@ -22,8 +22,10 @@ public class FileStorageService {
 
     private final Storage storage;
     private final String bucketName;
+
     @Autowired
     private CustomUserDetailsService userDetailsService;
+
 
 
     public FileStorageService(@Value("${spring.cloud.gcp.storage.bucket}") String bucketName) throws IOException {

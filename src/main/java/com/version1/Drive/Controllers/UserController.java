@@ -60,11 +60,18 @@ public class UserController {
         if (bindingResult.hasErrors()){
             return "/register";
         }
-        UserEntity user = userService.findByUsername(userDTO.getUsername());
-        if (user != null) {
-            model.addAttribute("Userexist", user);
+        UserEntity userUsername = userService.findByUsername(userDTO.getUsername());
+        UserEntity userEmail = userService.findByEmail(userDTO.getEmail());
+        if (userEmail != null) {
+            model.addAttribute("UserEmailExists", userEmail);
             return "register";
         }
+
+        else if (userUsername != null) {
+            model.addAttribute("UsernameExists", userUsername);
+            return "register";
+        }
+
         userService.save(userDTO);
         return "redirect:/register?success";
     }

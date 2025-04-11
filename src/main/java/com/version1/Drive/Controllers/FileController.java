@@ -2,6 +2,7 @@ package com.version1.Drive.Controllers;
 
 import com.version1.Drive.Custom.CustomUserDetails;
 import com.version1.Drive.DTO.FileDTO;
+//import com.version1.Drive.DTO.StorageUsageDTO;
 import com.version1.Drive.Services.FileStorageService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +38,7 @@ public class FileController {
     public String showDownloadPage(@RequestParam(value = "query", required = false) String query,
                                    @RequestParam(value = "activeTab", defaultValue = "myFiles") String activeTab,
                                    Model model) throws IOException {
-        String userId = getCurrentUserId();
+        String userId = getCurrentUserUsername();
         String userEmail = getCurrentUserEmail();
         List<FileDTO> files = fileStorageService.listFiles(userId, query);
         List<FileDTO> sharedFiles = fileStorageService.listSharedFiles(userEmail, query);
@@ -51,7 +52,7 @@ public class FileController {
 
     @GetMapping("/share")
     public String showSharePage(Model model) throws IOException {
-        String userId = getCurrentUserId();
+        String userId = getCurrentUserUsername();
         model.addAttribute("files", fileStorageService.listFiles(userId, null));
         return "share";
     }
@@ -60,7 +61,7 @@ public class FileController {
     public String handleFileUpload(@RequestParam("file") MultipartFile file,
                                    RedirectAttributes redirectAttributes) {
         try {
-            String userId = getCurrentUserId();
+            String userId = getCurrentUserUsername();
             fileStorageService.uploadFile(file, userId);
 
             redirectAttributes.addFlashAttribute("message", "File uploaded successfully");
@@ -75,7 +76,7 @@ public class FileController {
     public String handleFileDeletion(@PathVariable String fileName,
                                      RedirectAttributes redirectAttributes) {
         try {
-            String userId = getCurrentUserId();
+            String userId = getCurrentUserUsername();
             String filePath = buildUserFilePath(userId, fileName);
 
             fileStorageService.deleteFile(filePath);
@@ -92,7 +93,7 @@ public class FileController {
     @GetMapping("/files/download/{fileName:.+}")
     public ResponseEntity<byte[]> handleFileDownload(@PathVariable String fileName) {
         try {
-            String userId = getCurrentUserId();
+            String userId = getCurrentUserUsername();
             String filePath = buildUserFilePath(userId, fileName);
             byte[] fileData = fileStorageService.downloadFile(filePath);
             String originalName = fileStorageService.getOriginalName(filePath);
@@ -112,7 +113,7 @@ public class FileController {
             @RequestParam String recipientEmail,
             RedirectAttributes redirectAttributes) {
         try {
-            String userId = getCurrentUserId();
+            String userId = getCurrentUserUsername();
             String filePath = buildUserFilePath(userId, fileName);
             fileStorageService.shareFileToUser(filePath, recipientEmail);
             redirectAttributes.addFlashAttribute("message", "File shared successfully");
@@ -128,7 +129,7 @@ public class FileController {
         return USER_FOLDER_PREFIX + userId + "/" + fileName;
     }
 
-    private String getCurrentUserId() {
+    private String getCurrentUserUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
             return ((UserDetails) authentication.getPrincipal()).getUsername();

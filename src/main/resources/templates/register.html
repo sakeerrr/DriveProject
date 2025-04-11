@@ -47,7 +47,8 @@
     </form>
 
     <div>
-        <span th:if="${Userexist}" class="error-message">Username is already taken</span>
+        <span th:if="${UserEmailExists}" class="error-message">Email is already linked to an account</span>
+        <span th:if="${UsernameExists}" class="error-message">Username is already taken</span>
     </div>
 
     <p class="form-footer">Already have an account? <a th:href="@{/login}">Login here</a>.</p>

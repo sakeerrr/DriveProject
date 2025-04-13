@@ -69,6 +69,8 @@ public class FileController {
         } catch (IOException e) {
             redirectAttributes.addFlashAttribute("message", "File upload failed");
             return "redirect:/upload";
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

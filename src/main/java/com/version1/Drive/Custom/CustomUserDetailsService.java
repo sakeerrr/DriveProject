@@ -7,6 +7,7 @@ import com.version1.Drive.Models.UserEntity;
 import com.version1.Drive.Repositories.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -31,6 +32,39 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("Username or Password not found");
         }
         return new CustomUserDetails(user.getUsername(), user.getPassword(), authorities(), user.getEmail());
+    }
+
+    public Long getStorageLimit(String username) throws UsernameNotFoundException {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("Username not found");
+        }
+        return user.getStorageLimit();
+    }
+
+    public void setStorageLimit(String username, Long value) throws UsernameNotFoundException {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("Username not found");
+        }
+        user.setStorageLimit(user.getStorageLimit() + value);
+    }
+
+    public Long getStorageUsed(String username) throws UsernameNotFoundException {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("Username not found");
+        }
+        return user.getStorageUsed();
+    }
+
+    public void setStorageUsed(String username, Long value) throws UsernameNotFoundException {
+        UserEntity user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("Username not found");
+        }
+        user.setStorageUsed(user.getStorageUsed() + value);
+        userRepository.save(user);
     }
 
     public UserDetails loadUserByEmail(String email) throws UsernameNotFoundException {

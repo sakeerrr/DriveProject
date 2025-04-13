@@ -1,10 +1,6 @@
 package com.version1.Drive.Models;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "users")
@@ -15,6 +11,10 @@ public class UserEntity {
     private String username;
     private String password;
     private String email;
+    @Column(name = "storage_used")
+    private Long storageUsed = 0L;
+    @Column(name = "storage_limit")
+    private Long storageLimit = (long) (50L * Math.pow(1024, 3));
 
     public UserEntity() {
 
@@ -25,6 +25,22 @@ public class UserEntity {
         this.username = username;
         this.password = password;
         this.email = email;
+    }
+
+    public Long getStorageUsed() {
+        return storageUsed;
+    }
+
+    public void setStorageUsed(Long storageUsed) {
+        this.storageUsed = storageUsed;
+    }
+
+    public Long getStorageLimit() {
+        return storageLimit;
+    }
+
+    public void setStorageLimit(Long storageLimit) {
+        this.storageLimit = storageLimit;
     }
 
     public Long getId() {

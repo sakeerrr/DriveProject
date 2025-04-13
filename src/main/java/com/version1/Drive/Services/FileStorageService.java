@@ -4,10 +4,12 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.*;
 import com.version1.Drive.Custom.CustomUserDetailsService;
 import com.version1.Drive.DTO.FileDTO;
+import com.version1.Drive.DTO.UserDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
@@ -25,7 +27,6 @@ public class FileStorageService {
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
-
 
 
     public FileStorageService(@Value("${spring.cloud.gcp.storage.bucket}") String bucketName) throws IOException {
@@ -49,21 +50,31 @@ public class FileStorageService {
         }
     }
 
-    public void uploadFile(MultipartFile file, String userId) throws IOException {
+    public void uploadFile(MultipartFile file, String userId) throws Exception {
         validateFile(file);
         String filePath = buildFilePath(userId, file.getOriginalFilename());
-
         Map<String, String> metadata = new HashMap<>();
-        metadata.put(ORIGINAL_FILENAME_METADATA_KEY, file.getOriginalFilename());
-        metadata.put("ORIGINAL_OWNER", userId);
+        Long storageUsed = userDetailsService.getStorageUsed(userId);
+        Long storageLimit = userDetailsService.getStorageLimit(userId);
 
-        BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, filePath)
-                .setContentType(file.getContentType())
-                .setMetadata(metadata)
-                .build();
+        if (storageUsed + file.getSize() < storageLimit){
+            metadata.put(ORIGINAL_FILENAME_METADATA_KEY, file.getOriginalFilename());
+            metadata.put("ORIGINAL_OWNER", userId);
 
-        Blob blob = storage.create(blobInfo, file.getBytes());
-        blob.getMediaLink();
+            BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, filePath)
+                    .setContentType(file.getContentType())
+                    .setMetadata(metadata)
+                    .build();
+
+            Blob blob = storage.create(blobInfo, file.getBytes());
+            userDetailsService.setStorageUsed(userId, file.getSize());
+
+            blob.getMediaLink();
+
+        } else {
+            throw new Exception("Not enough space in cloud");
+        }
+
     }
 
     private void validateFile(MultipartFile file) throws IOException {
@@ -99,6 +110,7 @@ public class FileStorageService {
         if (!deleted) {
             throw new RuntimeException("Failed to delete file");
         }
+        userDetailsService.setStorageUsed(getFileOwner(blob), -blob.getSize());
     }
 
     public List<FileDTO> listFiles(String userId, String query) throws IOException {
@@ -182,7 +194,7 @@ public class FileStorageService {
     }
 
 
-    public void shareFileToUser(String sourceObjectPath, String recipientEmail) throws IOException {
+    public void shareFileToUser(String sourceObjectPath, String recipientEmail) throws Exception {
         Blob sourceBlob = getBlobOrThrow(sourceObjectPath);
 
         String originalFilename = getOriginalName(sourceObjectPath);
@@ -191,21 +203,30 @@ public class FileStorageService {
 
         String destinationPath = buildFilePath(recipientUserId, originalFilename);
 
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put(ORIGINAL_FILENAME_METADATA_KEY, originalFilename);
-        metadata.put("sharedBy", sourceBlob.getMetadata() != null
-                ? sourceBlob.getMetadata().getOrDefault("ORIGINAL_OWNER", "unknown")
-                : "unknown");
+        Long storageUsed = userDetailsService.getStorageUsed(recipientUserId);
+        Long storageLimit = userDetailsService.getStorageLimit(recipientEmail);
 
-        Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
-                .setSource(BlobId.of(bucketName, sourceObjectPath))
-                .setTarget(BlobInfo.newBuilder(bucketName, destinationPath)
-                        .setContentType(sourceBlob.getContentType())
-                        .setMetadata(metadata)
-                        .build())
-                .build();
+        if (storageUsed + sourceBlob.getSize() < storageLimit) {
+            Map<String, String> metadata = new HashMap<>();
+            metadata.put(ORIGINAL_FILENAME_METADATA_KEY, originalFilename);
+            metadata.put("sharedBy", sourceBlob.getMetadata() != null
+                    ? sourceBlob.getMetadata().getOrDefault("ORIGINAL_OWNER", "unknown")
+                    : "unknown");
 
-        storage.copy(request);
+            Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
+                    .setSource(BlobId.of(bucketName, sourceObjectPath))
+                    .setTarget(BlobInfo.newBuilder(bucketName, destinationPath)
+                            .setContentType(sourceBlob.getContentType())
+                            .setMetadata(metadata)
+                            .build())
+                    .build();
+
+            storage.copy(request);
+            userDetailsService.setStorageUsed(recipientUserId, sourceBlob.getSize());
+        } else {
+            throw new Exception("Not enough space in recipient's cloud");
+        }
+
     }
 
 
@@ -238,6 +259,12 @@ public class FileStorageService {
             return recipientUserId;
         }
     }
+
+    private String getFileOwner(Blob blob) {
+        Map<String, String> metadata = blob.getMetadata();
+        return metadata != null ? metadata.getOrDefault("ORIGINAL_OWNER", blob.getName().split("/")[1]) : blob.getName().split("/")[1];
+    }
+
 
 }
 //a

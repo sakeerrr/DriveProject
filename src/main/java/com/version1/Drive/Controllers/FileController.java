@@ -2,8 +2,10 @@ package com.version1.Drive.Controllers;
 
 import com.version1.Drive.Custom.CustomUserDetails;
 import com.version1.Drive.DTO.FileDTO;
-//import com.version1.Drive.DTO.StorageUsageDTO;
+import com.version1.Drive.Models.UserEntity;
+import com.version1.Drive.Repositories.UserRepository;
 import com.version1.Drive.Services.FileStorageService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -16,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.security.Principal;
 import java.util.List;
 
 
@@ -24,6 +27,8 @@ public class FileController {
     private static final String USER_FOLDER_PREFIX = "users/";
 
     private final FileStorageService fileStorageService;
+    @Autowired
+    private UserRepository userRepository;
 
     public FileController(FileStorageService fileStorageService) {
         this.fileStorageService = fileStorageService;
@@ -56,6 +61,21 @@ public class FileController {
         model.addAttribute("files", fileStorageService.listFiles(userId, null));
         return "share";
     }
+
+    @GetMapping("/storage")
+    public String showStoragePage(Model model) {
+        UserEntity user = userRepository.findByUsername(getCurrentUserUsername());
+        double usedGB = user.getStorageUsed() / (1024.0 * 1024 * 1024);
+        double limitGB = user.getStorageLimit() / (1024.0 * 1024 * 1024);
+        int percentage = (int) ((user.getStorageUsed() * 100) / user.getStorageLimit());
+        System.out.println(percentage);
+        model.addAttribute("percentageUsed", percentage);
+        model.addAttribute("usedGB", String.format("%.2f", usedGB));
+        model.addAttribute("limitGB", String.format("%.2f", limitGB));
+        model.addAttribute("userdetail", user);
+        return "storage";
+    }
+
 
     @PostMapping("/files/upload")
     public String handleFileUpload(@RequestParam("file") MultipartFile file,

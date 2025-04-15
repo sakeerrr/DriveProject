@@ -4,12 +4,10 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.*;
 import com.version1.Drive.Custom.CustomUserDetailsService;
 import com.version1.Drive.DTO.FileDTO;
-import com.version1.Drive.DTO.UserDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
@@ -229,8 +227,6 @@ public class FileStorageService {
 
     }
 
-
-
     public String getOriginalName(String filePath) throws IOException {
         Blob blob = getBlobOrThrow(filePath);
         if (blob.getMetadata() != null) {
@@ -267,4 +263,3 @@ public class FileStorageService {
 
 
 }
-//a

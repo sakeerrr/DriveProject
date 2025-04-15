@@ -21,8 +21,10 @@
     <div class="user-info" th:if="${userdetail}">
       <div class="user-name" th:text="${userdetail.username ?: 'User'}"></div>
     </div>
+    <a href="#" class="btn-storage" th:href="@{/storage}" style="margin-right: 1rem;">Storage Usage</a>
     <a href="#" class="btn-logout" th:href="@{/logout}">Logout</a>
   </div>
+
 </nav>
 
 <div class="dashboard-container">

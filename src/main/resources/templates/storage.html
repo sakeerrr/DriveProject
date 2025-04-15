@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storage Usage | CloudDrive</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" th:href="@{/css/stylesDashboard.css}">
+  <style>
+    .storage-usage-container {
+      max-width: 700px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      width: 100%;
+      background-color: #eee;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-top: 1rem;
+      height: 25px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: #4CAF50;
+      text-align: center;
+      color: white;
+      line-height: 25px;
+      transition: width 0.5s ease-in-out;
+    }
+
+    .storage-info {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="logo">
+    <a href="/" style="display: flex; align-items: center; text-decoration: none; color: inherit;">
+      <i class="fas fa-cloud"></i>
+      <span>CloudDrive</span>
+    </a>
+  </div>
+  <div class="user-nav">
+    <div class="user-info" th:if="${userdetail}">
+      <div class="user-name" th:text="${userdetail.username ?: 'User'}"></div>
+    </div>
+    <a href="#" class="btn-logout" th:href="@{/logout}">Logout</a>
+  </div>
+</nav>
+
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1 class="dashboard-title">Your Storage Usage</h1>
+    <p class="welcome-message">Track your current cloud storage usage and limit</p>
+  </div>
+
+  <div class="storage-usage-container" th:if="${userdetail}">
+    <div class="progress-bar">
+      <div class="progress-fill"
+           th:style="'width: ' + ${percentageUsed} + '%'">
+        <span th:text="${percentageUsed} + '%'">0%</span>
+      </div>
+    </div>
+    <div class="storage-info">
+      <span th:text="'Used: ' + ${usedGB} + ' GB'"></span><br>
+      <span th:text="'Limit: ' + ${limitGB} + ' GB'"></span>
+    </div>
+
+
+  </div>
+</div>
+</body>
+</html>

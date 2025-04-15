@@ -13,13 +13,33 @@ public class UserDTO {
     private String confirmPassword;
     @Email(message = "Invalid email format")
     private String email;
+    private Long storageUsed;
+    private Long storageLimit;
 
 
-    public UserDTO(String username, String password, String email) {
+    public UserDTO(String username, String password, String email, Long storageLimit, Long storageUsed) {
         super();
         this.username = username;
         this.password = password;
         this.email = email;
+        this.storageLimit = storageLimit;
+        this.storageUsed = storageUsed;
+    }
+
+    public Long getStorageUsed() {
+        return storageUsed;
+    }
+
+    public void setStorageUsed(Long storageUsed) {
+        this.storageUsed = storageUsed;
+    }
+
+    public Long getStorageLimit() {
+        return storageLimit;
+    }
+
+    public void setStorageLimit(Long storageLimit) {
+        this.storageLimit = storageLimit;
     }
 
     public String getUsername() {

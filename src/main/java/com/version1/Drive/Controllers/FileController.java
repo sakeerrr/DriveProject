@@ -5,6 +5,7 @@ import com.version1.Drive.DTO.FileDTO;
 import com.version1.Drive.Models.UserEntity;
 import com.version1.Drive.Repositories.UserRepository;
 import com.version1.Drive.Services.FileStorageService;
+import com.version1.Drive.Services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
-import java.security.Principal;
 import java.util.List;
 
 
@@ -27,8 +27,9 @@ public class FileController {
     private static final String USER_FOLDER_PREFIX = "users/";
 
     private final FileStorageService fileStorageService;
+
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
 
     public FileController(FileStorageService fileStorageService) {
         this.fileStorageService = fileStorageService;
@@ -64,7 +65,7 @@ public class FileController {
 
     @GetMapping("/storage")
     public String showStoragePage(Model model) {
-        UserEntity user = userRepository.findByUsername(getCurrentUserUsername());
+        UserEntity user = userService.findByUsername(getCurrentUserUsername());
         double usedGB = user.getStorageUsed() / (1024.0 * 1024 * 1024);
         double limitGB = user.getStorageLimit() / (1024.0 * 1024 * 1024);
         int percentage = (int) ((user.getStorageUsed() * 100) / user.getStorageLimit());

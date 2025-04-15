@@ -50,8 +50,11 @@ public class FileStorageService {
 
     public void uploadFile(MultipartFile file, String userId) throws Exception {
         validateFile(file);
+
         String filePath = buildFilePath(userId, file.getOriginalFilename());
+
         Map<String, String> metadata = new HashMap<>();
+
         Long storageUsed = userDetailsService.getStorageUsed(userId);
         Long storageLimit = userDetailsService.getStorageLimit(userId);
 
@@ -66,7 +69,6 @@ public class FileStorageService {
 
             Blob blob = storage.create(blobInfo, file.getBytes());
             userDetailsService.setStorageUsed(userId, file.getSize());
-
             blob.getMediaLink();
 
         } else {

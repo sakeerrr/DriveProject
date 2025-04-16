@@ -1,17 +1,30 @@
-package com.version1.Drive.DTO;
+package com.version1.Drive.Models;
 
-public class FileDTO {
+import jakarta.persistence.*;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+@Entity
+@Table(name="files")
+public class FileEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+
     private String uuidName;
     private String originalName;
     private String sharedBy;
     private String owner;
 
-    public FileDTO(String uuidName, String originalName, String sharedBy, String owner) {
+    public FileEntity() {
+
+    }
+
+    public FileEntity(String uuidName, String originalName, String sharedBy) {
         this.uuidName = uuidName;
         this.originalName = originalName;
         this.sharedBy = sharedBy;
-        this.owner = owner;
     }
+
 
     public String getOwner() {
         return owner;
@@ -19,6 +32,14 @@ public class FileDTO {
 
     public void setOwner(String owner) {
         this.owner = owner;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getUuidName() {

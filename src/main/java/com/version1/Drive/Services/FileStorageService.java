@@ -4,6 +4,8 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.*;
 import com.version1.Drive.Custom.CustomUserDetailsService;
 import com.version1.Drive.DTO.FileDTO;
+import com.version1.Drive.Models.FileEntity;
+import com.version1.Drive.Repositories.FileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
@@ -25,6 +27,9 @@ public class FileStorageService {
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
+
+    @Autowired
+    private FileRepository fileRepository;
 
 
     public FileStorageService(@Value("${spring.cloud.gcp.storage.bucket}") String bucketName) throws IOException {
@@ -51,6 +56,8 @@ public class FileStorageService {
     public void uploadFile(MultipartFile file, String userId) throws Exception {
         validateFile(file);
 
+        String userPrefix = USERS_FOLDER_PREFIX + userId + "/";
+
         String filePath = buildFilePath(userId, file.getOriginalFilename());
 
         Map<String, String> metadata = new HashMap<>();
@@ -69,6 +76,11 @@ public class FileStorageService {
 
             Blob blob = storage.create(blobInfo, file.getBytes());
             userDetailsService.setStorageUsed(userId, file.getSize());
+            FileDTO fileDTO = createFileDTOFromBlob(blob, userPrefix);
+            FileEntity fileEntity = new FileEntity(fileDTO.getUuidName(), fileDTO.getOriginalName(), fileDTO.getSharedBy());
+            fileEntity.setOwner(userId);
+            fileRepository.save(fileEntity);
+
             blob.getMediaLink();
 
         } else {
@@ -104,62 +116,78 @@ public class FileStorageService {
         return outputStream.toByteArray();
     }
 
-    public void deleteFile(String filePath) throws RuntimeException{
+    public void deleteFile(String filePath) {
         Blob blob = getBlobOrThrow(filePath);
+
         boolean deleted = storage.delete(blob.getBlobId());
         if (!deleted) {
             throw new RuntimeException("Failed to delete file");
         }
-        userDetailsService.setStorageUsed(getFileOwner(blob), -blob.getSize());
+
+        String owner = getFileOwner(blob);
+        Long fileSize = blob.getSize();
+
+        userDetailsService.setStorageUsed(owner, -fileSize);
+
+        String uuidName = extractUuidNameFromPath(filePath);
+        Optional<FileEntity> fileOpt = fileRepository.findByUuidName(uuidName);
+        fileOpt.ifPresent(fileRepository::delete);
     }
 
-    public List<FileDTO> listFiles(String userId, String query) throws IOException {
+
+    public List<FileDTO> listFiles(String userId, String query) {
+        List<FileEntity> fileEntities;
+
+        if (query == null || query.isBlank()) {
+            fileEntities = fileRepository.findByOwner(userId);
+        } else {
+            fileEntities = fileRepository.findByOwnerAndOriginalNameContainingIgnoreCase(userId, query.trim());
+        }
+
         List<FileDTO> files = new ArrayList<>();
-        String userPrefix = USERS_FOLDER_PREFIX + userId + "/";
-
-        for (Blob blob : getBlobsWithPrefix(userPrefix)) {
-            if (!blob.getName().equals(userPrefix)) {
-                Map<String, String> metadata = blob.getMetadata();
-                System.out.println("File: " + blob.getName() + " Metadata: " + metadata);
-                boolean isShared = metadata != null && metadata.get("sharedBy") != null;
-
-                if (!isShared) {
-                    String fileName = getOriginalName(blob.getName());
-
-                    if (query == null || fileName.toLowerCase().contains(query.trim().toLowerCase())) {
-                        files.add(createFileDTOFromBlob(blob, userPrefix));
-                    }
-                }
+        for (FileEntity entity : fileEntities) {
+            // Only include files that are not shared (i.e., directly uploaded by the user)
+            if (entity.getSharedBy() == null) {
+                FileDTO dto = new FileDTO(
+                        entity.getUuidName(),
+                        entity.getOriginalName(),
+                        entity.getSharedBy(),
+                        entity.getOwner()
+                );
+                files.add(dto);
             }
         }
 
         return files;
     }
 
-    public List<FileDTO> listSharedFiles(String userEmail, String query) throws IOException {
-        List<FileDTO> sharedFiles = new ArrayList<>();
+
+
+    public List<FileDTO> listSharedFiles(String userEmail, String query) {
         UserDetails user = userDetailsService.loadUserByEmail(userEmail);
         String userId = user.getUsername();
-        String userPrefix = USERS_FOLDER_PREFIX + userId + "/";
 
-
-        for (Blob blob : getBlobsWithPrefix(userPrefix)) {
-            if (!blob.getName().equals(userPrefix)) {
-                Map<String, String> metadata = blob.getMetadata();
-                System.out.println("File: " + blob.getName() + " Metadata: " + metadata);
-                boolean isShared = metadata != null && metadata.get("sharedBy") != null;
-
-                if (isShared) {
-                    String fileName = getOriginalName(blob.getName());
-
-                    if (query == null || fileName.toLowerCase().contains(query.trim().toLowerCase())) {
-                        sharedFiles.add(createFileDTOFromBlob(blob, userPrefix));
-                    }
-                }
-            }
+        List<FileEntity> fileEntities;
+        if (query == null || query.isBlank()) {
+            fileEntities = fileRepository.findByOwnerAndSharedByIsNotNull(userId);
+        } else {
+            fileEntities = fileRepository.findByOwnerAndSharedByIsNotNullAndOriginalNameContainingIgnoreCase(userId, query.trim());
         }
+
+        List<FileDTO> sharedFiles = new ArrayList<>();
+        for (FileEntity entity : fileEntities) {
+            FileDTO dto = new FileDTO(
+                    entity.getUuidName(),
+                    entity.getOriginalName(),
+                    entity.getSharedBy(),
+                    entity.getOwner()
+            );
+            sharedFiles.add(dto);
+        }
+
         return sharedFiles;
     }
+
 
 
     private Iterable<Blob> getBlobsWithPrefix(String prefix) {
@@ -170,19 +198,23 @@ public class FileStorageService {
         return bucket.list(Storage.BlobListOption.prefix(prefix)).iterateAll();
     }
 
-    private FileDTO createFileDTOFromBlob(Blob blob, String userPrefix) {
-        String originalName = blob.getMetadata() != null
-                ? blob.getMetadata().get(ORIGINAL_FILENAME_METADATA_KEY)
-                : blob.getName().substring(userPrefix.length());
+    private FileDTO createFileDTOFromBlob(Blob blob, String userPrefix) throws IOException {
+
         String sharedBy = blob.getMetadata() != null ? blob.getMetadata().get("sharedBy") : null;
 
         return new FileDTO(
                 blob.getName().substring(userPrefix.length()),
-                originalName,
-                sharedBy
+                getOriginalName(blob.getName()),
+                sharedBy,
+                getFileOwner(blob)
 
         );
     }
+
+    private String extractUuidNameFromPath(String filePath) {
+        return filePath.substring(filePath.lastIndexOf('/') + 1);
+    }
+
 
 
     private Iterable<Blob> getAllBlobs() {
@@ -194,40 +226,50 @@ public class FileStorageService {
     }
 
 
-    public void shareFileToUser(String sourceObjectPath, String recipientEmail) throws Exception {
-        Blob sourceBlob = getBlobOrThrow(sourceObjectPath);
+//    public void shareFileToUser(String sourceObjectPath, String recipientEmail) throws Exception {
+//        Blob sourceBlob = getBlobOrThrow(sourceObjectPath);
+//
+//        String fileName = extractFileNameFromPath(sourceObjectPath);  // Extract just the file name
+//        String originalFilename = getOriginalName(sourceObjectPath);  // Original filename (if any)
+//        String recipientUserId = getRecipientUserId(recipientEmail);  // Get the user ID of the recipient
+//
+//        String destinationPath = buildFilePath(recipientUserId, originalFilename);  // Define where to copy the file in recipient's storage
+//
+//        Long storageUsed = userDetailsService.getStorageUsed(recipientUserId);  // Get current storage used by the recipient
+//        Long storageLimit = userDetailsService.getStorageLimit(recipientUserId);  // Get the storage limit of the recipient
+//
+//        if (storageUsed + sourceBlob.getSize() < storageLimit) {
+//            Map<String, String> metadata = new HashMap<>();
+//            metadata.put(ORIGINAL_FILENAME_METADATA_KEY, originalFilename);
+//            metadata.put("sharedBy", sourceBlob.getMetadata() != null
+//                    ? sourceBlob.getMetadata().getOrDefault("ORIGINAL_OWNER", "unknown")
+//                    : "unknown");
+//
+//            // Copy the file to the recipient's storage
+//            Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
+//                    .setSource(BlobId.of(bucketName, sourceObjectPath))
+//                    .setTarget(BlobInfo.newBuilder(bucketName, destinationPath)
+//                            .setContentType(sourceBlob.getContentType())
+//                            .setMetadata(metadata)
+//                            .build())
+//                    .build();
+//
+//            storage.copy(request);  // Perform the copy
+//            userDetailsService.setStorageUsed(recipientUserId, sourceBlob.getSize());  // Update recipient's storage usage
+//
+//            // Generate a new UUID for the shared file
+//            String newUuid = UUID.randomUUID().toString();
+//
+//            // Save the file with the new UUID
+//            FileEntity fileEntity = new FileEntity(newUuid, fileName, originalFilename, sourceBlob.getMetadata().getOrDefault("ORIGINAL_OWNER", "unknown"));
+//            fileEntity.setOwner(recipientUserId);  // Set the recipient as the owner of the new file
+//            fileRepository.save(fileEntity);  // Save the new file entity to the database
+//        } else {
+//            throw new Exception("Recipient's storage is full");
+//        }
+//    }
 
-        String originalFilename = getOriginalName(sourceObjectPath);
 
-        String recipientUserId = getRecipientUserId(recipientEmail);
-
-        String destinationPath = buildFilePath(recipientUserId, originalFilename);
-
-        Long storageUsed = userDetailsService.getStorageUsed(recipientUserId);
-        Long storageLimit = userDetailsService.getStorageLimit(recipientEmail);
-
-        if (storageUsed + sourceBlob.getSize() < storageLimit) {
-            Map<String, String> metadata = new HashMap<>();
-            metadata.put(ORIGINAL_FILENAME_METADATA_KEY, originalFilename);
-            metadata.put("sharedBy", sourceBlob.getMetadata() != null
-                    ? sourceBlob.getMetadata().getOrDefault("ORIGINAL_OWNER", "unknown")
-                    : "unknown");
-
-            Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
-                    .setSource(BlobId.of(bucketName, sourceObjectPath))
-                    .setTarget(BlobInfo.newBuilder(bucketName, destinationPath)
-                            .setContentType(sourceBlob.getContentType())
-                            .setMetadata(metadata)
-                            .build())
-                    .build();
-
-            storage.copy(request);
-            userDetailsService.setStorageUsed(recipientUserId, sourceBlob.getSize());
-        } else {
-            throw new Exception("Not enough space in recipient's cloud");
-        }
-
-    }
 
     public String getOriginalName(String filePath) throws IOException {
         Blob blob = getBlobOrThrow(filePath);
@@ -261,6 +303,14 @@ public class FileStorageService {
     private String getFileOwner(Blob blob) {
         Map<String, String> metadata = blob.getMetadata();
         return metadata != null ? metadata.getOrDefault("ORIGINAL_OWNER", blob.getName().split("/")[1]) : blob.getName().split("/")[1];
+    }
+
+    private String extractFileNameFromPath(String path) {
+        int lastSlashIndex = path.lastIndexOf('/');
+        if (lastSlashIndex != -1 && lastSlashIndex < path.length() - 1) {
+            return path.substring(lastSlashIndex + 1);
+        }
+        return path;
     }
 
 

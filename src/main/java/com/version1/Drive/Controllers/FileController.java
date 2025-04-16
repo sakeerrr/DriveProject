@@ -2,7 +2,9 @@ package com.version1.Drive.Controllers;
 
 import com.version1.Drive.Custom.CustomUserDetails;
 import com.version1.Drive.DTO.FileDTO;
+import com.version1.Drive.Models.FileEntity;
 import com.version1.Drive.Models.UserEntity;
+import com.version1.Drive.Repositories.FileRepository;
 import com.version1.Drive.Repositories.UserRepository;
 import com.version1.Drive.Services.FileStorageService;
 import com.version1.Drive.Services.UserService;
@@ -20,6 +22,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 
 @Controller
@@ -30,6 +33,9 @@ public class FileController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private FileRepository fileRepository;
 
     public FileController(FileStorageService fileStorageService) {
         this.fileStorageService = fileStorageService;
@@ -70,6 +76,7 @@ public class FileController {
         double limitGB = user.getStorageLimit() / (1024.0 * 1024 * 1024);
         int percentage = (int) ((user.getStorageUsed() * 100) / user.getStorageLimit());
         System.out.println(percentage);
+
         model.addAttribute("percentageUsed", percentage);
         model.addAttribute("usedGB", String.format("%.2f", usedGB));
         model.addAttribute("limitGB", String.format("%.2f", limitGB));
@@ -113,40 +120,46 @@ public class FileController {
     }
 
 
-    @GetMapping("/files/download/{fileName:.+}")
-    public ResponseEntity<byte[]> handleFileDownload(@PathVariable String fileName) {
+    @GetMapping("/files/download/{uuidName:.+}")
+    public ResponseEntity<byte[]> handleFileDownload(@PathVariable String uuidName) {
         try {
             String userId = getCurrentUserUsername();
-            String filePath = buildUserFilePath(userId, fileName);
+
+            Optional<FileEntity> optionalFile = fileRepository.findByUuidNameAndOwner(uuidName, userId);
+            if (optionalFile.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            FileEntity fileEntity = optionalFile.get();
+            String filePath = buildUserFilePath(userId, uuidName);
             byte[] fileData = fileStorageService.downloadFile(filePath);
-            String originalName = fileStorageService.getOriginalName(filePath);
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + originalName + "\"")
+                            "attachment; filename=\"" + fileEntity.getOriginalName() + "\"")
                     .body(fileData);
         } catch (IOException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    @PostMapping("/files/share")
-    public String handleFileShare(
-            @RequestParam String fileName,
-            @RequestParam String recipientEmail,
-            RedirectAttributes redirectAttributes) {
-        try {
-            String userId = getCurrentUserUsername();
-            String filePath = buildUserFilePath(userId, fileName);
-            fileStorageService.shareFileToUser(filePath, recipientEmail);
-            redirectAttributes.addFlashAttribute("message", "File shared successfully");
-            return "redirect:/share";
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("message", "File share failed");
-            return "redirect:/share";
-        }
-    }
 
+//    @PostMapping("/files/share")
+//    public String handleFileShare(
+//            @RequestParam String fileName,
+//            @RequestParam String recipientEmail,
+//            RedirectAttributes redirectAttributes) {
+//        try {
+//            String userId = getCurrentUserUsername();
+//            String filePath = buildUserFilePath(userId, fileName);
+//            fileStorageService.shareFileToUser(filePath, recipientEmail);
+//            redirectAttributes.addFlashAttribute("message", "File shared successfully");
+//            return "redirect:/share";
+//        } catch (Exception e) {
+//            redirectAttributes.addFlashAttribute("message", "File share failed");
+//            return "redirect:/share";
+//        }
+//    }
 
     private String buildUserFilePath(String userId, String fileName) {
         return USER_FOLDER_PREFIX + userId + "/" + fileName;

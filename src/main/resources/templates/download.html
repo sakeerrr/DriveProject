@@ -101,6 +101,7 @@
       </form>
 
       <!-- Shared Files List -->
+      <!-- Shared Files List -->
       <div th:if="${sharedFiles.empty}" class="alert alert-info">No shared files found</div>
       <ul th:unless="${sharedFiles.empty}" class="list-group">
         <li th:each="file : ${sharedFiles}" class="list-group-item d-flex justify-content-between align-items-center">
@@ -113,9 +114,15 @@
             <a th:href="@{'/files/download/' + ${file.uuidName}}" class="btn btn-success btn-sm">
               <i class="bi bi-download"></i> Download
             </a>
+            <form th:action="@{'/files/delete/' + ${file.uuidName}}" method="post" class="d-inline">
+              <button type="submit" class="btn btn-danger btn-sm">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+            </form>
           </div>
         </li>
       </ul>
+
     </div>
 
   </div>

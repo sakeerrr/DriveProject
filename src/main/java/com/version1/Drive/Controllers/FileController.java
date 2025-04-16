@@ -134,6 +134,8 @@ public class FileController {
             String filePath = buildUserFilePath(userId, uuidName);
             byte[] fileData = fileStorageService.downloadFile(filePath);
 
+            System.out.println(filePath);
+
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION,
                             "attachment; filename=\"" + fileEntity.getOriginalName() + "\"")
@@ -144,22 +146,22 @@ public class FileController {
     }
 
 
-//    @PostMapping("/files/share")
-//    public String handleFileShare(
-//            @RequestParam String fileName,
-//            @RequestParam String recipientEmail,
-//            RedirectAttributes redirectAttributes) {
-//        try {
-//            String userId = getCurrentUserUsername();
-//            String filePath = buildUserFilePath(userId, fileName);
-//            fileStorageService.shareFileToUser(filePath, recipientEmail);
-//            redirectAttributes.addFlashAttribute("message", "File shared successfully");
-//            return "redirect:/share";
-//        } catch (Exception e) {
-//            redirectAttributes.addFlashAttribute("message", "File share failed");
-//            return "redirect:/share";
-//        }
-//    }
+    @PostMapping("/files/share")
+    public String handleFileShare(
+            @RequestParam String fileName,
+            @RequestParam String recipientEmail,
+            RedirectAttributes redirectAttributes) {
+        try {
+            String userId = getCurrentUserUsername();
+            String filePath = buildUserFilePath(userId, fileName);
+            fileStorageService.shareFileToUser(filePath, recipientEmail);
+            redirectAttributes.addFlashAttribute("message", "File shared successfully");
+            return "redirect:/share";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message", "File share failed");
+            return "redirect:/share";
+        }
+    }
 
     private String buildUserFilePath(String userId, String fileName) {
         return USER_FOLDER_PREFIX + userId + "/" + fileName;

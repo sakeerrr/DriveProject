@@ -39,7 +39,8 @@ public class FileStorageService {
     }
 
     private Storage initializeStorageClient() throws IOException {
-        InputStream keyFile = new ClassPathResource("driveproject-454710-370c5a1e54b4.json").getInputStream();
+        String keyFilePath = System.getenv("keyFile");
+        InputStream keyFile = new ClassPathResource(keyFilePath).getInputStream();
         return StorageOptions.newBuilder()
                 .setCredentials(ServiceAccountCredentials.fromStream(keyFile))
                 .build()

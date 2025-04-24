@@ -1,7 +1,6 @@
 package com.version1.Drive.Models;
 
 import jakarta.persistence.*;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 @Entity
 @Table(name="files")

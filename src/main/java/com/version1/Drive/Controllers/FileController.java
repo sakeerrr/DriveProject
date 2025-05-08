@@ -28,7 +28,8 @@ import java.util.Optional;
 public class FileController {
     private static final String USER_FOLDER_PREFIX = "users/";
 
-    private final FileStorageService fileStorageService;
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @Autowired
     private UserService userService;
@@ -36,9 +37,9 @@ public class FileController {
     @Autowired
     private FileRepository fileRepository;
 
-    public FileController(FileStorageService fileStorageService) {
-        this.fileStorageService = fileStorageService;
-    }
+//    public FileController(FileStorageService fileStorageService) {
+//        this.fileStorageService = fileStorageService;
+//    }
 
     @GetMapping("/upload")
     public String showUploadPage() {
@@ -90,15 +91,18 @@ public class FileController {
         try {
             String userId = getCurrentUserUsername();
             fileStorageService.uploadFile(file, userId);
-
             redirectAttributes.addFlashAttribute("message", "File uploaded successfully");
-            return "redirect:/upload";
         } catch (IOException e) {
-            redirectAttributes.addFlashAttribute("message", "File upload failed");
-            return "redirect:/upload";
+            System.out.println(e.getMessage());
+            redirectAttributes.addFlashAttribute("message", "File upload error");
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+            redirectAttributes.addFlashAttribute("message", "Invalid file or user input");
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            System.out.println(e.getMessage());
+            redirectAttributes.addFlashAttribute("message", "Unexpected error occurred during upload.");
         }
+        return "redirect:/upload";
     }
 
     @PostMapping("/files/delete/{fileName:.+}")
@@ -107,23 +111,22 @@ public class FileController {
         try {
             String userId = getCurrentUserUsername();
             String filePath = buildUserFilePath(userId, fileName);
-
             fileStorageService.deleteFile(filePath);
-
             redirectAttributes.addFlashAttribute("message", "File deleted successfully");
-            return "redirect:/download";
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+            redirectAttributes.addFlashAttribute("message", "Invalid file name");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("message", "Failed to delete file: " + e.getMessage());
-            return "redirect:/download";
+            System.out.println(e.getMessage());
+            redirectAttributes.addFlashAttribute("message", "Unexpected error during deletion.");
         }
+        return "redirect:/download";
     }
-
 
     @GetMapping("/files/download/{uuidName:.+}")
     public ResponseEntity<byte[]> handleFileDownload(@PathVariable String uuidName) {
         try {
             String userId = getCurrentUserUsername();
-
             Optional<FileEntity> optionalFile = fileRepository.findByUuidNameAndOwner(uuidName, userId);
             if (optionalFile.isEmpty()) {
                 return ResponseEntity.notFound().build();
@@ -133,34 +136,44 @@ public class FileController {
             String filePath = buildUserFilePath(userId, uuidName);
             byte[] fileData = fileStorageService.downloadFile(filePath);
 
-            System.out.println(filePath);
-
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION,
                             "attachment; filename=\"" + fileEntity.getOriginalName() + "\"")
                     .body(fileData);
         } catch (IOException e) {
-            return ResponseEntity.notFound().build();
+            System.out.println(e.getMessage());
+            return ResponseEntity.status(500).header("Error", "IO error occurred").build();
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+            return ResponseEntity.status(400).header("Error", "Invalid file identifier").build();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return ResponseEntity.status(500).header("Error", "Unexpected server error").build();
         }
     }
 
-
     @PostMapping("/files/share")
-    public String handleFileShare(
-            @RequestParam String fileName,
-            @RequestParam String recipientEmail,
-            RedirectAttributes redirectAttributes) {
+    public String handleFileShare(@RequestParam String fileName,
+                                  @RequestParam String recipientEmail,
+                                  RedirectAttributes redirectAttributes) {
         try {
             String userId = getCurrentUserUsername();
             String filePath = buildUserFilePath(userId, fileName);
             fileStorageService.shareFileToUser(filePath, recipientEmail);
             redirectAttributes.addFlashAttribute("message", "File shared successfully");
-            return "redirect:/share";
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+            redirectAttributes.addFlashAttribute("message", "Invalid input");
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            redirectAttributes.addFlashAttribute("message", "IO error occurred during sharing");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("message", "File share failed");
-            return "redirect:/share";
+            System.out.println(e.getMessage());
+            redirectAttributes.addFlashAttribute("message", "Unexpected error occurred during sharing");
         }
+        return "redirect:/share";
     }
+
 
     private String buildUserFilePath(String userId, String fileName) {
         return USER_FOLDER_PREFIX + userId + "/" + fileName;

@@ -17,7 +17,6 @@ public class UserEntity {
     private Long storageLimit = (long) (50L * Math.pow(1024, 3));
 
     public UserEntity() {
-
     }
 
     public UserEntity(String username, String password, String email) {

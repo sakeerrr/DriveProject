@@ -24,7 +24,6 @@ public class FileEntity {
         this.sharedBy = sharedBy;
     }
 
-
     public String getOwner() {
         return owner;
     }

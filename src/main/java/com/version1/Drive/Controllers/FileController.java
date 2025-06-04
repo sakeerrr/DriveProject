@@ -37,9 +37,6 @@ public class FileController {
     @Autowired
     private FileRepository fileRepository;
 
-//    public FileController(FileStorageService fileStorageService) {
-//        this.fileStorageService = fileStorageService;
-//    }
 
     @GetMapping("/upload")
     public String showUploadPage() {

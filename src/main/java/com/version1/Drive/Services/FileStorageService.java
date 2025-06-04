@@ -32,14 +32,16 @@ public class FileStorageService {
     @Autowired
     private FileRepository fileRepository;
 
-    public FileStorageService(@Value("${spring.cloud.gcp.storage.bucket}") String bucketName) throws IOException {
+    public FileStorageService(
+            @Value("${spring.cloud.gcp.storage.bucket}") String bucketName,
+            @Value("${spring.cloud.gcp.credentials.location}") String keyFilePath
+    ) throws IOException {
         this.bucketName = bucketName;
-        this.storage = initializeStorageClient();
+        this.storage = initializeStorageClient(keyFilePath);
         logAuthenticationInfo();
     }
 
-    private Storage initializeStorageClient() throws IOException {
-        String keyFilePath = System.getenv("keyFile");
+    private Storage initializeStorageClient(String keyFilePath) throws IOException {
         InputStream keyFile = new ClassPathResource(keyFilePath).getInputStream();
         return StorageOptions.newBuilder()
                 .setCredentials(ServiceAccountCredentials.fromStream(keyFile))
@@ -48,10 +50,7 @@ public class FileStorageService {
     }
 
     private void logAuthenticationInfo() {
-        if (storage.getOptions().getCredentials() instanceof ServiceAccountCredentials credentials) {
-            String clientEmail = credentials.getClientEmail();
-            System.out.println("Authenticating as: " + clientEmail);
-        }
+        System.out.println("Initialized Google Cloud Storage client");
     }
 
     public void uploadFile(MultipartFile file, String userId) throws Exception {

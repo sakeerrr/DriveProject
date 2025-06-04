@@ -37,3 +37,19 @@ A cloud-based file storage and sharing service, similar to Google Drive, built u
 4. **Start the SpringBoot project**
 
 
+## Docker Compose Instructions
+1. **Install Docker and Docker Compose**
+
+2. **Create a .jar file of your project**
+    ```bash
+    ./mvnw clean package
+
+3. **Create the Dockerfile and docker-compose.yaml file in the project directory and set them up. Create a .env file with 
+the environmental variables**
+
+4. **Create an image and a container**
+    ```bash
+    docker build -t drive-app
+    docker-compose up --build
+**NOTE**:
+Temporarily stop your database server to prevent the servers from working on the same host :3306 !

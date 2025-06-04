@@ -7,6 +7,7 @@ import com.version1.Drive.DTO.FileDTO;
 import com.version1.Drive.Models.FileEntity;
 import com.version1.Drive.Repositories.FileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -31,14 +32,14 @@ public class FileStorageService {
     @Autowired
     private FileRepository fileRepository;
 
-    public FileStorageService() throws IOException {
-        this.bucketName = "spring_drive_project_bucket";
-        this.storage = initializeStorageClient();
+    public FileStorageService(@Value("${spring.cloud.gcp.storage.bucket}") String bucketName, @Value("${spring.cloud.gcp.credentials.location}") String filePath) throws IOException {
+        this.bucketName = bucketName;
+        this.storage = initializeStorageClient(filePath);
         logAuthenticationInfo();
     }
 
-    private Storage initializeStorageClient() throws IOException {
-        InputStream keyFile = new ClassPathResource("driveproject-454710-370c5a1e54b4.json").getInputStream();
+    private Storage initializeStorageClient(String filePath) throws IOException {
+        InputStream keyFile = new ClassPathResource(filePath).getInputStream();
         return StorageOptions.newBuilder()
                 .setCredentials(ServiceAccountCredentials.fromStream(keyFile))
                 .build()

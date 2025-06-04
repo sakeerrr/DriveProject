@@ -10,6 +10,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public String handleNoHandlerFound(NoHandlerFoundException ex, HttpServletRequest request) {
-        return "redirect:/"; // Redirect to home page
+        return "redirect:/";
     }
 }

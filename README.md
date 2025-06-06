@@ -53,3 +53,6 @@ the environmental variables**
     docker-compose up --build
 **NOTE**:
 Temporarily stop your database server to prevent the servers from working on the same host :3306 !
+
+**NOTE**:
+Make sure to hardcode your environmental variables in the application.properties file if you encounter any problems!

@@ -38,6 +38,11 @@ A cloud-based file storage and sharing service, similar to Google Drive, built u
 
 
 ## Docker Compose Instructions
+
+**Dockerfile contains the required versions and files for the Docker container to work**
+**The docker-compose.yaml contains the services that will work together(in this case: DB and backend)**
+**The .env contains the environment variables necessary for the project to work(You should make your own .env file!)**
+
 1. **Install Docker and Docker Compose**
 
 2. **Create a .jar file of your project**
